@@ -18,7 +18,7 @@ export async function GET(
     if (!item) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json(item);
+    return NextResponse.json({ ...item, isAvailable: !item.isStruckOut });
   } catch (error) {
     console.error("Menu item GET error:", error);
     return NextResponse.json({ error: "Failed to fetch item" }, { status: 500 });
@@ -46,19 +46,30 @@ export async function PATCH(
       );
     }
 
+    const updateData: Record<string, unknown> = { ...parsed.data };
+    if (parsed.data.isAvailable !== undefined) {
+      updateData.isStruckOut = !parsed.data.isAvailable;
+      delete updateData.isAvailable;
+    }
+
     const item = await prisma.menuItem.update({
       where: { id },
-      data: parsed.data,
+      data: updateData,
       include: { category: true },
     });
 
+    const responseItem = {
+      ...item,
+      isAvailable: !item.isStruckOut,
+    };
+
     menuEvents.emit({
       type: "item_updated",
-      payload: { item },
+      payload: { item: responseItem },
       timestamp: Date.now(),
     });
 
-    return NextResponse.json(item);
+    return NextResponse.json(responseItem);
   } catch (error) {
     console.error("Menu item PATCH error:", error);
     return NextResponse.json({ error: "Failed to update item" }, { status: 500 });

@@ -12,36 +12,47 @@
   }
 
   body {
-    @apply font-sans text-espresso;
+    @apply font-sans bg-obsidian text-zinc-100 antialiased selection:bg-amber/20 selection:text-amber;
+    background-color: #0F0F11;
   }
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-brass/30 rounded-full;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-brass/50;
+    @apply bg-zinc-800 rounded-full hover:bg-zinc-700;
   }
 }
 
 @layer components {
-  /* Parchment paper texture background */
-  .bg-parchment-texture {
-    background-color: #FAF7F2;
-    background-image:
-      url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  /* Frosted dark glass container */
+  .frosted-glass {
+    background: rgba(24, 24, 27, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(39, 39, 42, 0.8);
   }
 
-  .dark .bg-parchment-texture {
-    background-color: #141413;
+  /* Warm ambient glow */
+  .amber-glow {
+    box-shadow: 0 0 25px -5px rgba(217, 119, 6, 0.2);
+  }
+
+  .amber-glow-sm {
+    box-shadow: 0 0 12px -2px rgba(217, 119, 6, 0.25);
+  }
+
+  /* Parchment paper texture background fallback */
+  .bg-parchment-texture {
+    background-color: #0F0F11;
     background-image:
-      url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+      radial-gradient(circle at 50% 0%, rgba(217, 119, 6, 0.05) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
   }
 
   /* Brass border accents */

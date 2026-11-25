@@ -38,6 +38,8 @@ export const menuItemSchema = z.object({
   dietaryType: z.enum(["veg", "nonveg", "vegan", "egg"]).default("veg"),
   spiceLevel: z.number().int().min(1).max(5).default(1),
   isChefSpecial: z.boolean().default(false),
+  isBestseller: z.boolean().default(false),
+  isStruckOut: z.boolean().default(false),
   availabilitySlot: z
     .enum(["morning_only", "lunch_dinner", "all_day"])
     .default("all_day"),
@@ -45,7 +47,9 @@ export const menuItemSchema = z.object({
   sortOrder: z.number().int().default(0),
 });
 
-export const menuItemUpdateSchema = menuItemSchema.partial();
+export const menuItemUpdateSchema = menuItemSchema.partial().extend({
+  isAvailable: z.boolean().optional(),
+});
 
 // ─── Category Schema ───
 export const categorySchema = z.object({

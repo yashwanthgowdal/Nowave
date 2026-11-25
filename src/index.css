@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-sans bg-obsidian text-zinc-100 antialiased selection:bg-amber/20 selection:text-amber;
+    background-color: #0F0F11;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-800 rounded-full hover:bg-zinc-700;
+  }
+}
+
+@layer components {
+  /* Frosted dark glass container */
+  .frosted-glass {
+    background: rgba(24, 24, 27, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(39, 39, 42, 0.8);
+  }
+
+  /* Warm ambient glow */
+  .amber-glow {
+    box-shadow: 0 0 25px -5px rgba(217, 119, 6, 0.2);
+  }
+
+  .amber-glow-sm {
+    box-shadow: 0 0 12px -2px rgba(217, 119, 6, 0.25);
+  }
+
+  /* Parchment paper texture background fallback */
+  .bg-parchment-texture {
+    background-color: #0F0F11;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(217, 119, 6, 0.05) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  }
+
+  /* Brass border accents */
+  .border-brass-accent {
+    @apply border-brass/30;
+  }
+
+  .dark .border-brass-accent {
+    @apply border-amber/20;
+  }
+
+  /* Sold out stamp */
+  .sold-out-stamp {
+    @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+           px-3 py-1 border-2 border-soldout-red text-soldout-red
+           font-serif font-bold text-xs tracking-widest uppercase
+           -rotate-6 animate-stamp pointer-events-none select-none;
+  }
+
+  /* Strike-through line */
+  .strike-line {
+    @apply absolute left-0 right-0 top-1/2 h-[2px] bg-soldout-red/60
+           -translate-y-1/2 pointer-events-none;
+  }
+
+  /* Toggle switch */
+  .toggle-switch {
+    @apply relative inline-flex h-7 w-12 cursor-pointer items-center
+           rounded-full transition-colors duration-200 ease-in-out
+           focus-visible:outline-none focus-visible:ring-2
+           focus-visible:ring-brass focus-visible:ring-offset-2;
+  }
+  .toggle-switch[data-state="checked"] {
+    @apply bg-veg-green;
+  }
+  .toggle-switch[data-state="unchecked"] {
+    @apply bg-gray-300 dark:bg-gray-600;
+  }
+  .toggle-knob {
+    @apply inline-block h-5 w-5 transform rounded-full bg-white shadow-md
+           ring-0 transition-transform duration-200 ease-in-out;
+  }
+  .toggle-switch[data-state="checked"] .toggle-knob {
+    @apply translate-x-6;
+  }
+  .toggle-switch[data-state="unchecked"] .toggle-knob {
+    @apply translate-x-1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

@@ -11,7 +11,11 @@ export async function GET() {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       include: { category: true },
     });
-    return NextResponse.json(items);
+    const enriched = items.map((item) => ({
+      ...item,
+      isAvailable: !item.isStruckOut,
+    }));
+    return NextResponse.json(enriched);
   } catch (error) {
     console.error("Menu items GET error:", error);
     return NextResponse.json({ error: "Failed to fetch menu items" }, { status: 500 });
@@ -44,6 +48,8 @@ export async function POST(request: NextRequest) {
         dietaryType: parsed.data.dietaryType,
         spiceLevel: parsed.data.spiceLevel,
         isChefSpecial: parsed.data.isChefSpecial,
+        isBestseller: parsed.data.isBestseller,
+        isStruckOut: parsed.data.isStruckOut,
         availabilitySlot: parsed.data.availabilitySlot,
         categoryId: parsed.data.categoryId,
         sortOrder: parsed.data.sortOrder,
@@ -51,13 +57,18 @@ export async function POST(request: NextRequest) {
       include: { category: true },
     });
 
+    const responseItem = {
+      ...item,
+      isAvailable: !item.isStruckOut,
+    };
+
     menuEvents.emit({
       type: "item_created",
-      payload: { item },
+      payload: { item: responseItem },
       timestamp: Date.now(),
     });
 
-    return NextResponse.json(item, { status: 201 });
+    return NextResponse.json(responseItem, { status: 201 });
   } catch (error) {
     console.error("Menu item POST error:", error);
     return NextResponse.json({ error: "Failed to create item" }, { status: 500 });

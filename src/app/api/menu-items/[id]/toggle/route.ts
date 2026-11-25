@@ -28,13 +28,18 @@ export async function PATCH(
       include: { category: true },
     });
 
+    const enriched = {
+      ...item,
+      isAvailable: !item.isStruckOut,
+    };
+
     menuEvents.emit({
       type: "item_updated",
-      payload: { item },
+      payload: { item: enriched },
       timestamp: Date.now(),
     });
 
-    return NextResponse.json(item);
+    return NextResponse.json(enriched);
   } catch (error) {
     console.error("Toggle error:", error);
     return NextResponse.json({ error: "Failed to toggle item" }, { status: 500 });

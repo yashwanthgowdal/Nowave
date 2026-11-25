@@ -27,6 +27,7 @@ model MenuItem {
   dietaryType      String   @default("veg") // veg, nonveg, vegan, egg
   spiceLevel       Int      @default(1) // 1-5
   isChefSpecial    Boolean  @default(false)
+  isBestseller     Boolean  @default(false)
   availabilitySlot String   @default("all_day") // morning_only, lunch_dinner, all_day
   isStruckOut      Boolean  @default(false)
   sortOrder        Int      @default(0)
