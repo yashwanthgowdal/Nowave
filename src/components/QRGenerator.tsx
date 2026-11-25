@@ -15,20 +15,18 @@ export function QRGenerator({ initialTable = "1", baseUrl }: QRGeneratorProps) {
   const [copied, setCopied] = useState(false);
   const printCardRef = useRef<HTMLDivElement>(null);
 
-  // Default detected network IP
-  const defaultNetworkIp = "http://172.17.39.147:3000";
+  // Production live domain as default origin
+  const productionDomain = "https://nowaveteam-123.vercel.app";
 
   // State for user-configurable base URL / origin
   const [customOrigin, setCustomOrigin] = useState<string>(() => {
     if (baseUrl) return baseUrl;
     if (typeof window !== "undefined") {
-      // If opened via localhost, suggest network IP so phone scanning works right away
-      if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-        return defaultNetworkIp;
+      if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+        return window.location.origin;
       }
-      return window.location.origin;
     }
-    return defaultNetworkIp;
+    return productionDomain;
   });
 
   const origin = customOrigin.replace(/\/+$/, "");
@@ -140,27 +138,26 @@ export function QRGenerator({ initialTable = "1", baseUrl }: QRGeneratorProps) {
               <div className="flex flex-wrap gap-2 text-xs">
                 <button
                   type="button"
-                  onClick={() => setCustomOrigin(defaultNetworkIp)}
+                  onClick={() => setCustomOrigin(productionDomain)}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1 ${
-                    customOrigin === defaultNetworkIp
+                    customOrigin === productionDomain
                       ? "bg-amber text-black font-semibold"
                       : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                   }`}
                 >
-                  <Wifi className="w-3 h-3" />
-                  Wi-Fi Phone IP (172.17.39.147:3000)
+                  <span>🟢 Live Vercel Domain</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setCustomOrigin(typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}
+                  onClick={() => setCustomOrigin(typeof window !== "undefined" ? window.location.origin : productionDomain)}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                    customOrigin.includes("localhost") || customOrigin.includes("127.0.0.1")
+                    customOrigin !== productionDomain
                       ? "bg-amber text-black font-semibold"
                       : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                   }`}
                 >
-                  This PC (localhost:3000)
+                  Current Browser Origin
                 </button>
               </div>
 
