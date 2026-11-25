@@ -6,13 +6,34 @@ import { AdminQRPage } from "@/components/AdminQRPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export function App() {
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
+
+  // The 2nd and 3rd domains in your Vercel Domains list contain "-nothing-763e" or "git-main"
+  const isManagerDomain =
+    hostname.includes("nothing-763e") ||
+    hostname.includes("git-main") ||
+    hostname.includes("manager") ||
+    hostname.includes("admin");
+
   return (
     <Routes>
-      {/* 1. Main Share Links & Root (/) -> Strictly Manager Login */}
-      <Route path="/" element={<AdminLogin />} />
-      <Route path="/manager" element={<AdminLogin />} />
+      {/* 
+        DOMAIN-BASED SPLIT IN VERCEL:
+        - 1st Domain (nowaveteam-123.vercel.app): Strictly CUSTOMER MENU
+        - 2nd & 3rd Domain (*-nothing-763e.vercel.app): Strictly MANAGER LOGIN
+      */}
+      <Route
+        path="/"
+        element={isManagerDomain ? <AdminLogin /> : <CustomerMenu />}
+      />
+
+      {/* Customer Menu direct view */}
+      <Route path="/menu" element={<CustomerMenu />} />
+
+      {/* Manager direct routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/login" element={<AdminLogin />} />
+      <Route path="/manager" element={<AdminLogin />} />
       <Route
         path="/admin"
         element={
@@ -30,11 +51,11 @@ export function App() {
         }
       />
 
-      {/* 2. Customer Menu (Used by Diners & Table QR Codes: /menu?table=X) */}
-      <Route path="/menu" element={<CustomerMenu />} />
-
-      {/* Catch-all redirect to Manager Login */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Catch-all redirect */}
+      <Route
+        path="*"
+        element={<Navigate to={isManagerDomain ? "/admin/login" : "/"} replace />}
+      />
     </Routes>
   );
 }
