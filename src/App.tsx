@@ -9,8 +9,13 @@ export function App() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
 
-  // Dedicated Manager Domain detector (e.g. nowaveteam-123-git-main... or any admin/manager domain)
+  // Dedicated Manager Domain detector:
+  // - nowaveteam-123-prqi0j11z-nothing-763e.vercel.app
+  // - nowaveteam-123-git-main-nothing-763e.vercel.app
+  // - any domain containing admin or manager
   const isManagerDomain =
+    hostname.includes("nothing-763e") ||
+    hostname.includes("prqi0j1") ||
     hostname.includes("git-main") ||
     hostname.includes("admin") ||
     hostname.includes("manager");
