@@ -9,9 +9,8 @@ export function App() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
 
-  // The 2nd and 3rd domains in your Vercel Domains list contain "-nothing-763e" or "git-main"
+  // Strictly the 2nd domain in your Vercel list: nowaveteam-123-git-main-nothing-763e.vercel.app
   const isManagerDomain =
-    hostname.includes("nothing-763e") ||
     hostname.includes("git-main") ||
     hostname.includes("manager") ||
     hostname.includes("admin");
