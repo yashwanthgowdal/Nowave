@@ -6,13 +6,31 @@ import { AdminQRPage } from "@/components/AdminQRPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export function App() {
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
+
+  // Dedicated Manager Domain detector (e.g. nowaveteam-123-git-main... or any admin/manager domain)
+  const isManagerDomain =
+    hostname.includes("git-main") ||
+    hostname.includes("admin") ||
+    hostname.includes("manager");
+
   return (
     <Routes>
-      {/* 1. CUSTOMER LINK: Strictly Customer Digital Menu */}
-      <Route path="/" element={<CustomerMenu />} />
+      {/* 
+        DOMAIN-BASED ROUTING:
+        - 1st Domain (nowaveteam-123.vercel.app): Strictly User / Customer Menu
+        - 2nd Domain (nowaveteam-123-git-main-...): Strictly Manager Login
+      */}
+      <Route
+        path="/"
+        element={isManagerDomain ? <AdminLogin /> : <CustomerMenu />}
+      />
+
+      {/* Customer Menu direct view */}
       <Route path="/menu" element={<CustomerMenu />} />
 
-      {/* 2. MANAGER LINK: Strictly Manager Admin Login & Dashboard */}
+      {/* Manager direct routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route
         path="/admin"
@@ -32,7 +50,10 @@ export function App() {
       />
 
       {/* Catch-all redirect */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="*"
+        element={<Navigate to={isManagerDomain ? "/admin/login" : "/"} replace />}
+      />
     </Routes>
   );
 }
