@@ -9,8 +9,10 @@ export function App() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
 
-  // Strictly the 2nd domain in your Vercel list: nowaveteam-123-git-main-nothing-763e.vercel.app
+  // All Vercel share links and deployment links contain 'nothing-763e'
+  // The primary customer domain 'nowaveteam-123.vercel.app' does NOT contain 'nothing-763e'
   const isManagerDomain =
+    hostname.includes("nothing-763e") ||
     hostname.includes("git-main") ||
     hostname.includes("manager") ||
     hostname.includes("admin");
