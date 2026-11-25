@@ -6,38 +6,13 @@ import { AdminQRPage } from "@/components/AdminQRPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export function App() {
-  const hostname =
-    typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
-  const search =
-    typeof window !== "undefined" ? window.location.search.toLowerCase() : "";
-
-  // Dedicated Manager Access detector
-  const isManagerMode =
-    hostname.includes("nothing-763e") ||
-    hostname.includes("prqi0j1") ||
-    hostname.includes("git-main") ||
-    hostname.includes("admin") ||
-    hostname.includes("manager") ||
-    search.includes("manager") ||
-    search.includes("admin");
-
   return (
     <Routes>
-      {/* Root Route */}
-      <Route
-        path="/"
-        element={isManagerMode ? <AdminLogin /> : <CustomerMenu />}
-      />
-
-      {/* Customer Menu direct view */}
-      <Route path="/menu" element={<CustomerMenu />} />
-
-      {/* Manager direct routes (shareable links) */}
+      {/* 1. Main Share Links & Root (/) -> Strictly Manager Login */}
+      <Route path="/" element={<AdminLogin />} />
       <Route path="/manager" element={<AdminLogin />} />
-      <Route path="/manager/login" element={<AdminLogin />} />
-      <Route path="/login" element={<AdminLogin />} />
-      <Route path="/staff" element={<AdminLogin />} />
       <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/login" element={<AdminLogin />} />
       <Route
         path="/admin"
         element={
@@ -55,11 +30,11 @@ export function App() {
         }
       />
 
-      {/* Catch-all redirect */}
-      <Route
-        path="*"
-        element={<Navigate to={isManagerMode ? "/admin/login" : "/"} replace />}
-      />
+      {/* 2. Customer Menu (Used by Diners & Table QR Codes: /menu?table=X) */}
+      <Route path="/menu" element={<CustomerMenu />} />
+
+      {/* Catch-all redirect to Manager Login */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
