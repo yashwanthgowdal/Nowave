@@ -9,13 +9,16 @@ export function App() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
 
-  // All Vercel share links and deployment links contain 'nothing-763e'
-  // The primary customer domain 'nowaveteam-123.vercel.app' does NOT contain 'nothing-763e'
+  // Domain separation in Vercel:
+  // - nowaveteam-123-git-main-nothing-763e.vercel.app -> Customer Menu / Login
+  // - nowaveteam-123-[hash]-nothing-763e.vercel.app (Share link) -> Manager Login
+  // - nowaveteam-123.vercel.app -> Customer Menu
+  const isGitMain = hostname.includes("git-main");
   const isManagerDomain =
-    hostname.includes("nothing-763e") ||
-    hostname.includes("git-main") ||
-    hostname.includes("manager") ||
-    hostname.includes("admin");
+    !isGitMain &&
+    (hostname.includes("nothing-763e") ||
+      hostname.includes("manager") ||
+      hostname.includes("admin"));
 
   return (
     <Routes>
