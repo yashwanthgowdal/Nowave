@@ -164,33 +164,22 @@ export function CustomerMenu() {
               </div>
             )}
 
-            {/* Right Header Group: Live Status + Staff Login */}
-            <div className="flex items-center gap-2">
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300"
-                title={
-                  isFirebaseConfigured
-                    ? "Live cloud synchronization active via Firebase Firestore"
-                    : "Live parallel menu updates active"
-                }
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="font-medium text-emerald-400">Live Menu</span>
-                <span className="text-zinc-600 hidden sm:inline">•</span>
-                <span className="text-zinc-400 hidden sm:inline">Real-time sync</span>
-              </div>
-
-              <Link
-                to="/admin/login"
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-400 hover:text-amber transition-colors"
-                title="Manager Admin Portal"
-              >
-                <Lock className="w-3 h-3 text-amber" />
-                <span>Staff Login</span>
-              </Link>
+            {/* Live Synchronized Status Pill */}
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300"
+              title={
+                isFirebaseConfigured
+                  ? "Live cloud synchronization active via Firebase Firestore"
+                  : "Live parallel menu updates active"
+              }
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="font-medium text-emerald-400">Live Menu</span>
+              <span className="text-zinc-600 hidden sm:inline">•</span>
+              <span className="text-zinc-400 hidden sm:inline">Real-time sync</span>
             </div>
           </div>
 

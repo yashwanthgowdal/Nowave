@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { PortalGateway } from "@/components/PortalGateway";
 import { CustomerMenu } from "@/components/CustomerMenu";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { AdminLogin } from "@/components/AdminLogin";
@@ -9,16 +8,12 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 export function App() {
   return (
     <Routes>
-      {/* Root Domain Gateway: Offers distinct Customer Menu access & Manager Login */}
-      <Route path="/" element={<PortalGateway />} />
-
-      {/* Customer Menu view directly (used by Table QR codes: /menu?table=X) */}
+      {/* 1. CUSTOMER LINK: Strictly Customer Digital Menu */}
+      <Route path="/" element={<CustomerMenu />} />
       <Route path="/menu" element={<CustomerMenu />} />
 
-      {/* Admin Authentication */}
+      {/* 2. MANAGER LINK: Strictly Manager Admin Login & Dashboard */}
       <Route path="/admin/login" element={<AdminLogin />} />
-
-      {/* Protected Admin Control Panel Routes */}
       <Route
         path="/admin"
         element={
