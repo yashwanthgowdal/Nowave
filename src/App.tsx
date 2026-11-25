@@ -8,34 +8,35 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 export function App() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
+  const search =
+    typeof window !== "undefined" ? window.location.search.toLowerCase() : "";
 
-  // Dedicated Manager Domain detector:
-  // - nowaveteam-123-prqi0j11z-nothing-763e.vercel.app
-  // - nowaveteam-123-git-main-nothing-763e.vercel.app
-  // - any domain containing admin or manager
-  const isManagerDomain =
+  // Dedicated Manager Access detector
+  const isManagerMode =
     hostname.includes("nothing-763e") ||
     hostname.includes("prqi0j1") ||
     hostname.includes("git-main") ||
     hostname.includes("admin") ||
-    hostname.includes("manager");
+    hostname.includes("manager") ||
+    search.includes("manager") ||
+    search.includes("admin");
 
   return (
     <Routes>
-      {/* 
-        DOMAIN-BASED ROUTING:
-        - 1st Domain (nowaveteam-123.vercel.app): Strictly User / Customer Menu
-        - 2nd Domain (nowaveteam-123-git-main-...): Strictly Manager Login
-      */}
+      {/* Root Route */}
       <Route
         path="/"
-        element={isManagerDomain ? <AdminLogin /> : <CustomerMenu />}
+        element={isManagerMode ? <AdminLogin /> : <CustomerMenu />}
       />
 
       {/* Customer Menu direct view */}
       <Route path="/menu" element={<CustomerMenu />} />
 
-      {/* Manager direct routes */}
+      {/* Manager direct routes (shareable links) */}
+      <Route path="/manager" element={<AdminLogin />} />
+      <Route path="/manager/login" element={<AdminLogin />} />
+      <Route path="/login" element={<AdminLogin />} />
+      <Route path="/staff" element={<AdminLogin />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route
         path="/admin"
@@ -57,7 +58,7 @@ export function App() {
       {/* Catch-all redirect */}
       <Route
         path="*"
-        element={<Navigate to={isManagerDomain ? "/admin/login" : "/"} replace />}
+        element={<Navigate to={isManagerMode ? "/admin/login" : "/"} replace />}
       />
     </Routes>
   );
