@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LogIn, Eye, EyeOff, ShieldCheck, ArrowLeft, Sparkles, Cloud, CloudOff } from "lucide-react";
+import { LogIn, Eye, EyeOff, ShieldCheck, ArrowLeft, Sparkles, Cloud, CloudOff, UtensilsCrossed, Lock } from "lucide-react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -91,6 +91,23 @@ export function AdminLogin() {
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>View Customer Menu</span>
         </Link>
+      </div>
+
+      {/* Top Portal Switcher Bar */}
+      <div className="w-full max-w-md mb-6 z-10 flex items-center justify-center">
+        <div className="flex items-center gap-1 p-1 bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg">
+          <Link
+            to="/menu"
+            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors flex items-center gap-1.5"
+          >
+            <UtensilsCrossed className="w-3.5 h-3.5" />
+            <span>Customer Menu</span>
+          </Link>
+          <span className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber text-black flex items-center gap-1.5 shadow-md shadow-amber/20 cursor-default">
+            <Lock className="w-3.5 h-3.5" />
+            <span>Manager Login</span>
+          </span>
+        </div>
       </div>
 
       <motion.div
