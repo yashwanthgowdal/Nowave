@@ -9,27 +9,20 @@ export function App() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
 
-  // Domain separation in Vercel:
-  // - nowaveteam-123-git-main-nothing-763e.vercel.app -> Customer Menu / Login
-  // - nowaveteam-123-[hash]-nothing-763e.vercel.app (Share link) -> Manager Login
-  // - nowaveteam-123.vercel.app -> Customer Menu
-  const isGitMain = hostname.includes("git-main");
-  const isManagerDomain =
-    !isGitMain &&
-    (hostname.includes("nothing-763e") ||
-      hostname.includes("manager") ||
-      hostname.includes("admin"));
+  // Dedicated Domain Separation:
+  // 1. Customer Site Domain: nowaveteam-123-git-main-nothing-763e.vercel.app
+  // 2. Manager Site Domain (Vercel Share Link): nowaveteam-123.vercel.app
+  const isCustomerDomain = hostname.includes("git-main");
 
   return (
     <Routes>
       {/* 
-        DOMAIN-BASED SPLIT IN VERCEL:
-        - 1st Domain (nowaveteam-123.vercel.app): Strictly CUSTOMER MENU
-        - 2nd & 3rd Domain (*-nothing-763e.vercel.app): Strictly MANAGER LOGIN
+        - nowaveteam-123.vercel.app (Vercel Share link): Strictly MANAGER SITE
+        - nowaveteam-123-git-main-nothing-763e.vercel.app: Strictly CUSTOMER SITE
       */}
       <Route
         path="/"
-        element={isManagerDomain ? <AdminLogin /> : <CustomerMenu />}
+        element={isCustomerDomain ? <CustomerMenu /> : <AdminLogin />}
       />
 
       {/* Customer Menu direct view */}
@@ -38,6 +31,7 @@ export function App() {
       {/* Manager direct routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/manager" element={<AdminLogin />} />
+      <Route path="/login" element={<AdminLogin />} />
       <Route
         path="/admin"
         element={
@@ -58,7 +52,7 @@ export function App() {
       {/* Catch-all redirect */}
       <Route
         path="*"
-        element={<Navigate to={isManagerDomain ? "/admin/login" : "/"} replace />}
+        element={<Navigate to={isCustomerDomain ? "/menu" : "/admin/login"} replace />}
       />
     </Routes>
   );

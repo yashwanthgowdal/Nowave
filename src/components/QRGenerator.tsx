@@ -15,8 +15,8 @@ export function QRGenerator({ initialTable = "1", baseUrl }: QRGeneratorProps) {
   const [copied, setCopied] = useState(false);
   const printCardRef = useRef<HTMLDivElement>(null);
 
-  // Production live domain as default origin
-  const productionDomain = "https://nowaveteam-123.vercel.app";
+  // Dedicated Customer domain for table QR codes
+  const productionDomain = "https://nowaveteam-123-git-main-nothing-763e.vercel.app";
 
   // State for user-configurable base URL / origin
   const [customOrigin, setCustomOrigin] = useState<string>(() => {
