@@ -168,8 +168,16 @@ CREATE TABLE IF NOT EXISTS customer_reviews (
 );
 
 -- ───────────────────────────────────────────────────────────
--- 6. ROW-LEVEL SECURITY (RLS) POLICIES — NO SILENT FAILS
+-- 6. ROW-LEVEL SECURITY & PERMISSIONS
 -- ───────────────────────────────────────────────────────────
+
+-- Grant schema and table permissions to anon and authenticated roles
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated;
 
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
