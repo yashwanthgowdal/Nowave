@@ -76,28 +76,19 @@ export interface Order {
   status: OrderStatus;
   createdAt: number;
   estimatedMinutes: number;
+  sessionToken?: string;
 }
 
-export type ServiceRequestType = "water" | "napkins" | "bill" | "help";
-
-export interface ServiceRequest {
-  id: string;
-  tableNumber: string;
-  type: ServiceRequestType;
-  status: "pending" | "acknowledged" | "resolved";
-  createdAt: number;
-  resolvedAt?: number;
-}
-
-export type TableStatus = "available" | "ordering" | "cooking" | "eating" | "bill" | "help";
+export type TableStatus = "browsing" | "ordered" | "cooking" | "eating" | "paid";
 
 export interface TableSession {
   tableNumber: string;
   status: TableStatus;
   currentOrderId?: string;
-  activeServiceRequest?: ServiceRequest;
   guestCount?: number;
   totalSpent?: number;
+  sessionToken?: string;
+  lastActiveAt?: number;
 }
 
 export interface BillPayment {
@@ -130,8 +121,6 @@ export interface RealtimeMenuEvent {
     | "reset_all"
     | "order_created"
     | "order_updated"
-    | "service_called"
-    | "service_resolved"
     | "bill_paid"
     | "review_submitted"
     | "connected"

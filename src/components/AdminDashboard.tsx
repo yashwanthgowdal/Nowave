@@ -47,7 +47,7 @@ type AdminTab = "overview" | "kds" | "floor" | "availability" | "crud" | "qr";
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { items, categories, loading, error, refresh, setItems } = useRealtimeMenu();
-  const { activeServiceRequests, orders } = useRestaurantStore();
+  const { orders } = useRestaurantStore();
 
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -398,11 +398,6 @@ export function AdminDashboard() {
             >
               <MapPin className="w-4 h-4" />
               <span>Floor Map</span>
-              {activeServiceRequests.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse">
-                  {activeServiceRequests.length} Help
-                </span>
-              )}
             </button>
 
             <button

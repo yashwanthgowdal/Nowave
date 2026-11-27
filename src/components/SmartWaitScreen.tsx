@@ -10,13 +10,12 @@ import {
   Check,
   Copy,
   Receipt,
-  Bell,
   Sparkles,
   ChevronDown,
   ChevronUp,
-  Flame,
   X,
   CreditCard,
+  Flame,
 } from "lucide-react";
 import { Order } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
@@ -25,7 +24,6 @@ interface SmartWaitScreenProps {
   order: Order;
   isOpen: boolean;
   onClose: () => void;
-  onOpenCallWaiter: () => void;
   onOpenPayBill: () => void;
 }
 
@@ -34,17 +32,17 @@ const QUIZ_QUESTIONS = [
     q: "Sabse teekhi mirch kaunsi hai (Hottest chili in India)?",
     options: ["Bhut Jolokia (Ghost Pepper)", "Jalapeño", "Kashmiri Mirch", "Guntur Sannam"],
     answerIndex: 0,
-    funFact: "Bhut Jolokia from Assam was once certified by Guinness as the hottest chili!",
+    funFact: "Bhut Jolokia from Assam was once certified by Guinness as the world's hottest chili!",
   },
   {
     q: "Which spice gives Dal Makhani and Biryani its golden yellow hue?",
     options: ["Saffron (Kesar)", "Turmeric (Haldi)", "Cardamom", "Star Anise"],
     answerIndex: 1,
-    funFact: "Turmeric has been used in Ayurvedic cooking for over 4,000 years.",
+    funFact: "Turmeric has been cultivated in India for over 4,000 years.",
   },
   {
-    q: "What gives Tandoori Roti its signature smoky aroma?",
-    options: ["Clay tandoor oven & charcoal embers", "Gas grill", "Microwave radiation", "Cast iron pan"],
+    q: "What gives Tandoori Roti its signature blistered smoky aroma?",
+    options: ["Clay tandoor oven & glowing coals", "Gas grill", "Microwave radiation", "Cast iron pan"],
     answerIndex: 0,
     funFact: "Authentic clay tandoors reach temperatures exceeding 480°C (900°F)!",
   },
@@ -54,7 +52,6 @@ export function SmartWaitScreen({
   order,
   isOpen,
   onClose,
-  onOpenCallWaiter,
   onOpenPayBill,
 }: SmartWaitScreenProps) {
   if (!isOpen) return null;
@@ -84,13 +81,11 @@ export function SmartWaitScreen({
   const seconds = secondsRemaining % 60;
   const formattedTime = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
-  // Percentage for the animated circle
   const progressPercent = Math.max(
     5,
     Math.min(100, Math.round(((totalSeconds - secondsRemaining) / totalSeconds) * 100))
   );
 
-  // Wi-Fi details
   const wifiSSID = "NoWave_Guest";
   const wifiPass = "nowave2026";
 
@@ -145,10 +140,10 @@ export function SmartWaitScreen({
             </span>
             <h3 className="font-serif text-lg font-bold text-white">
               {order.status === "ready"
-                ? "Your food is ready!"
+                ? "Your dishes are ready!"
                 : order.status === "served"
-                ? "Enjoy your meal!"
-                : "Your food is cooking"}
+                ? "Enjoy your culinary journey!"
+                : "Your meal is cooking"}
             </h3>
           </div>
           <button
@@ -271,11 +266,7 @@ export function SmartWaitScreen({
         <div className="min-h-[170px] bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-center text-center">
           {/* 1. WiFi Tab */}
           {activeTab === "wifi" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-3"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
               <div className="flex items-center justify-center gap-2 text-zinc-300 font-semibold text-xs">
                 <Wifi className="w-4 h-4 text-amber" />
                 <span>Complimentary Guest High-Speed Wi-Fi</span>
@@ -312,19 +303,14 @@ export function SmartWaitScreen({
 
           {/* 2. Rewards Tab */}
           {activeTab === "rewards" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-2.5"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2.5">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber/15 border border-amber/30 text-amber text-xs font-bold">
                 <Sparkles className="w-3 h-3" />
                 <span>+40 Points Earned on this order!</span>
               </div>
               <p className="text-xs font-semibold text-white">
-                Every meal earns points towards free dishes
+                Every meal earns points towards free culinary dishes
               </p>
-              {/* Progress bar */}
               <div className="space-y-1 mt-2">
                 <div className="flex justify-between text-[11px] font-bold text-zinc-400">
                   <span>140 Points</span>
@@ -334,7 +320,7 @@ export function SmartWaitScreen({
                   <div className="h-full bg-gradient-to-r from-amber to-amber-500 rounded-full w-[70%]" />
                 </div>
                 <p className="text-[10px] text-zinc-400 pt-1">
-                  🎁 60 points away from a <strong className="text-amber">Free Mango Lassi</strong>!
+                  🎁 60 points away from a <strong className="text-amber">Free Alphonso Mango Lassi</strong>!
                 </p>
               </div>
             </motion.div>
@@ -342,12 +328,7 @@ export function SmartWaitScreen({
 
           {/* 3. Games Tab (Spice Quiz) */}
           {activeTab === "games" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-3"
-            >
-              {/* Live Leaderboard vs Table 2 */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
               <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900 rounded-xl border border-zinc-800 text-xs">
                 <div className="flex items-center gap-1.5">
                   <span className="px-1.5 py-0.5 rounded bg-amber text-obsidian text-[10px] font-black">
@@ -364,12 +345,10 @@ export function SmartWaitScreen({
                 </div>
               </div>
 
-              {/* Question */}
               <p className="text-xs font-bold text-white text-left">
                 Q: {currentQuiz.q}
               </p>
 
-              {/* Options */}
               <div className="grid grid-cols-2 gap-1.5">
                 {currentQuiz.options.map((opt, oIdx) => (
                   <button
@@ -444,24 +423,25 @@ export function SmartWaitScreen({
           </AnimatePresence>
         </div>
 
-        {/* Bottom Actions: Call Waiter & Pay Bill */}
-        <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-zinc-800/80">
-          <button
-            type="button"
-            onClick={onOpenCallWaiter}
-            className="py-3 px-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-xs font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-98"
-          >
-            <Bell className="w-4 h-4 text-red-400" />
-            <span>Call Waiter</span>
-          </button>
+        {/* Hardware Synergy: NoWave Lamp Prompt */}
+        <div className="mt-4 p-3 rounded-2xl bg-[#191817] border border-amber/30 text-left flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-amber/20 border border-amber/40 flex items-center justify-center shrink-0 text-amber font-bold text-xs">
+            💡
+          </div>
+          <p className="text-[11px] text-zinc-300 leading-snug">
+            Need water or cutlery? <strong className="text-amber font-semibold">No Wave. Just Tilt</strong> — flip your table lamp to Red.
+          </p>
+        </div>
 
+        {/* Bottom Actions */}
+        <div className="mt-4 pt-3 border-t border-zinc-800/80">
           <button
             type="button"
             onClick={onOpenPayBill}
-            className="py-3 px-3 rounded-2xl bg-gradient-to-r from-amber to-amber-600 text-obsidian text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-98 shadow-lg shadow-amber/20 hover:brightness-110"
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber to-amber-600 text-obsidian text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-98 shadow-lg shadow-amber/20 hover:brightness-110"
           >
             <CreditCard className="w-4 h-4" />
-            <span>Split & Pay Bill</span>
+            <span>Split & Pay Bill at Table</span>
           </button>
         </div>
       </motion.div>

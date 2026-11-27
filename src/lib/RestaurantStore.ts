@@ -2,41 +2,37 @@ import {
   Order,
   OrderItemRecord,
   OrderStatus,
-  ServiceRequest,
-  ServiceRequestType,
   TableSession,
   TableStatus,
   BillPayment,
   CustomerReview,
   ShortlistItem,
-  KitchenStation,
   RealtimeMenuEvent,
 } from "./types";
 import { getDishStation } from "./itemHelpers";
-import { playBellSound, playOrderChime, playSuccessChime } from "./audioService";
+import { playOrderChime, playSuccessChime } from "./audioService";
+import { verifyTableToken } from "./tableSession";
 
-const ORDERS_STORAGE_KEY = "nowave_orders_store_v1";
-const TABLES_STORAGE_KEY = "nowave_tables_store_v1";
-const REQUESTS_STORAGE_KEY = "nowave_service_requests_v1";
-const PAYMENTS_STORAGE_KEY = "nowave_payments_store_v1";
-const REVIEWS_STORAGE_KEY = "nowave_reviews_store_v1";
+const ORDERS_STORAGE_KEY = "nowave_orders_store_v2";
+const TABLES_STORAGE_KEY = "nowave_tables_store_v2";
+const PAYMENTS_STORAGE_KEY = "nowave_payments_store_v2";
+const REVIEWS_STORAGE_KEY = "nowave_reviews_store_v2";
 
 const RESTAURANT_BUS_CHANNEL = "nowave_restaurant_realtime_bus";
 
-// Initial standard 6 restaurant tables as shown in the video
+// Standard 6 tables matching restaurant floor layout
 const INITIAL_TABLES: TableSession[] = [
-  { tableNumber: "1", status: "eating", guestCount: 2, totalSpent: 840 },
-  { tableNumber: "2", status: "bill", guestCount: 4, totalSpent: 1650 },
-  { tableNumber: "3", status: "ordering", guestCount: 2, totalSpent: 0 },
-  { tableNumber: "4", status: "eating", guestCount: 3, totalSpent: 1120 },
-  { tableNumber: "5", status: "available", guestCount: 2, totalSpent: 0 },
-  { tableNumber: "6", status: "eating", guestCount: 4, totalSpent: 1980 },
+  { tableNumber: "1", status: "eating", guestCount: 2, totalSpent: 840, lastActiveAt: Date.now() },
+  { tableNumber: "2", status: "paid", guestCount: 4, totalSpent: 1650, lastActiveAt: Date.now() },
+  { tableNumber: "3", status: "browsing", guestCount: 2, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "4", status: "eating", guestCount: 3, totalSpent: 1120, lastActiveAt: Date.now() },
+  { tableNumber: "5", status: "browsing", guestCount: 2, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "6", status: "eating", guestCount: 4, totalSpent: 1980, lastActiveAt: Date.now() },
 ];
 
 class RestaurantOperationsStore {
   private orders: Order[] = [];
   private tables: TableSession[] = [...INITIAL_TABLES];
-  private serviceRequests: ServiceRequest[] = [];
   private payments: BillPayment[] = [];
   private reviews: CustomerReview[] = [];
 
@@ -65,7 +61,6 @@ class RestaurantOperationsStore {
         if (
           e.key === ORDERS_STORAGE_KEY ||
           e.key === TABLES_STORAGE_KEY ||
-          e.key === REQUESTS_STORAGE_KEY ||
           e.key === PAYMENTS_STORAGE_KEY
         ) {
           this.loadFromStorage();
@@ -83,9 +78,6 @@ class RestaurantOperationsStore {
 
       const storedTables = localStorage.getItem(TABLES_STORAGE_KEY);
       if (storedTables) this.tables = JSON.parse(storedTables);
-
-      const storedRequests = localStorage.getItem(REQUESTS_STORAGE_KEY);
-      if (storedRequests) this.serviceRequests = JSON.parse(storedRequests);
 
       const storedPayments = localStorage.getItem(PAYMENTS_STORAGE_KEY);
       if (storedPayments) this.payments = JSON.parse(storedPayments);
@@ -107,7 +99,6 @@ class RestaurantOperationsStore {
     try {
       localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(this.orders));
       localStorage.setItem(TABLES_STORAGE_KEY, JSON.stringify(this.tables));
-      localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(this.serviceRequests));
       localStorage.setItem(PAYMENTS_STORAGE_KEY, JSON.stringify(this.payments));
       localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(this.reviews));
     } catch (err) {
@@ -132,8 +123,6 @@ class RestaurantOperationsStore {
     this.loadFromStorage();
     if (event.type === "order_created") {
       playOrderChime();
-    } else if (event.type === "service_called") {
-      playBellSound();
     } else if (event.type === "bill_paid") {
       playSuccessChime();
     }
@@ -156,7 +145,16 @@ class RestaurantOperationsStore {
     items: ShortlistItem[];
     totalAmount: number;
     estimatedMinutes?: number;
+    sessionToken?: string;
   }): Order {
+    // Validate anti-spoofing session token if provided
+    if (params.sessionToken) {
+      const isValid = verifyTableToken(params.sessionToken, params.tableNumber);
+      if (!isValid) {
+        console.warn("Anti-spoofing: order session token mismatch, re-anchoring table");
+      }
+    }
+
     const orderNum = `#${this.orderCounter++}`;
     const orderItems: OrderItemRecord[] = params.items.map((shortItem, idx) => {
       const station = getDishStation(shortItem.item);
@@ -164,7 +162,7 @@ class RestaurantOperationsStore {
         id: `oi-${Date.now()}-${idx}`,
         menuItemId: shortItem.item.id,
         name: shortItem.item.name,
-        price: shortItem.calculatedPrice,
+        price: shortItem.calculatedPrice || shortItem.item.price,
         quantity: shortItem.quantity,
         station,
         customization: shortItem.customization || {
@@ -185,11 +183,12 @@ class RestaurantOperationsStore {
       status: "cooking",
       createdAt: Date.now(),
       estimatedMinutes: params.estimatedMinutes || 12,
+      sessionToken: params.sessionToken,
     };
 
     this.orders.unshift(newOrder);
 
-    // Update Table status
+    // Update Table status to cooking
     this.updateTableStatus(params.tableNumber, "cooking", newOrder.id);
 
     this.persist();
@@ -207,7 +206,7 @@ class RestaurantOperationsStore {
         if (status === "served") {
           this.updateTableStatus(o.tableNumber, "eating");
         } else if (status === "completed") {
-          this.updateTableStatus(o.tableNumber, "available");
+          this.updateTableStatus(o.tableNumber, "paid");
         }
         return updated;
       }
@@ -255,79 +254,6 @@ class RestaurantOperationsStore {
     return [...this.orders];
   }
 
-  // ─── SERVICE CALLS API ("Call Waiter") ───
-
-  public callWaiter(tableNumber: string, type: ServiceRequestType): ServiceRequest {
-    // Check if table already has an active pending request
-    const existing = this.serviceRequests.find(
-      (r) => r.tableNumber === tableNumber && r.status === "pending"
-    );
-
-    if (existing) {
-      existing.type = type;
-      existing.createdAt = Date.now();
-      playBellSound();
-      this.persist();
-      this.broadcast("service_called", { request: existing });
-      this.notify();
-      return existing;
-    }
-
-    const request: ServiceRequest = {
-      id: `req-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      tableNumber,
-      type,
-      status: "pending",
-      createdAt: Date.now(),
-    };
-
-    this.serviceRequests.unshift(request);
-    this.updateTableStatus(tableNumber, "help");
-
-    this.persist();
-    playBellSound();
-    this.broadcast("service_called", { request });
-    this.notify();
-
-    return request;
-  }
-
-  public acknowledgeServiceRequest(requestId: string) {
-    this.serviceRequests = this.serviceRequests.map((r) =>
-      r.id === requestId ? { ...r, status: "acknowledged" } : r
-    );
-    this.persist();
-    this.broadcast("service_resolved", { requestId });
-    this.notify();
-  }
-
-  public resolveServiceRequest(requestId: string) {
-    const req = this.serviceRequests.find((r) => r.id === requestId);
-    if (req) {
-      req.status = "resolved";
-      req.resolvedAt = Date.now();
-      // Revert table status from help back to eating or cooking
-      const activeOrder = this.getActiveOrderByTable(req.tableNumber);
-      const nextStatus: TableStatus = activeOrder
-        ? activeOrder.status === "cooking"
-          ? "cooking"
-          : "eating"
-        : "available";
-      this.updateTableStatus(req.tableNumber, nextStatus);
-    }
-    this.persist();
-    this.broadcast("service_resolved", { requestId });
-    this.notify();
-  }
-
-  public getActiveServiceRequests(): ServiceRequest[] {
-    return this.serviceRequests.filter((r) => r.status === "pending");
-  }
-
-  public getAllServiceRequests(): ServiceRequest[] {
-    return [...this.serviceRequests];
-  }
-
   // ─── TABLE MANAGEMENT API ───
 
   public updateTableStatus(
@@ -341,6 +267,7 @@ class RestaurantOperationsStore {
         ...this.tables[tableIndex],
         status,
         currentOrderId: currentOrderId || this.tables[tableIndex].currentOrderId,
+        lastActiveAt: Date.now(),
       };
     } else {
       this.tables.push({
@@ -349,6 +276,7 @@ class RestaurantOperationsStore {
         currentOrderId,
         guestCount: 2,
         totalSpent: 0,
+        lastActiveAt: Date.now(),
       });
     }
     this.persist();
@@ -364,9 +292,10 @@ class RestaurantOperationsStore {
     if (table) return table;
     const newT: TableSession = {
       tableNumber,
-      status: "available",
+      status: "browsing",
       guestCount: 2,
       totalSpent: 0,
+      lastActiveAt: Date.now(),
     };
     this.tables.push(newT);
     return newT;
@@ -394,11 +323,11 @@ class RestaurantOperationsStore {
     // Update order status to completed
     this.updateOrderStatus(params.orderId, "completed");
 
-    // Update table total and clear table
+    // Update table total and mark paid
     const table = this.tables.find((t) => t.tableNumber === params.tableNumber);
     if (table) {
       table.totalSpent = (table.totalSpent || 0) + params.totalPaid;
-      table.status = "available";
+      table.status = "paid";
       table.currentOrderId = undefined;
     }
 
@@ -437,7 +366,7 @@ class RestaurantOperationsStore {
   // ─── EXECUTIVE DASHBOARD METRICS ───
 
   public getLiveMetrics() {
-    const occupiedTables = this.tables.filter((t) => t.status !== "available").length;
+    const activeTables = this.tables.filter((t) => t.status !== "browsing").length;
     const totalTables = this.tables.length || 6;
 
     const baseSales = 46700;
@@ -454,12 +383,11 @@ class RestaurantOperationsStore {
     }
 
     return {
-      occupiedTables,
+      activeTables,
       totalTables,
       totalOrdersCount,
       totalSales,
       avgRating,
-      activeServiceCalls: this.getActiveServiceRequests().length,
     };
   }
 }

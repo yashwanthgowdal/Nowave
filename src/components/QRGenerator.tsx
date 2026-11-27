@@ -30,7 +30,7 @@ export function QRGenerator({ initialTable = "1", baseUrl }: QRGeneratorProps) {
   });
 
   const origin = customOrigin.replace(/\/+$/, "");
-  const targetUrl = `${origin}/menu?table=${encodeURIComponent(tableNumber)}`;
+  const targetUrl = `${origin}/table/${encodeURIComponent(tableNumber)}`;
   const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
 
   useEffect(() => {

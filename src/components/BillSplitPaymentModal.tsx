@@ -7,12 +7,9 @@ import {
   CreditCard,
   QrCode,
   Banknote,
-  Building2,
   Check,
   Star,
   Users,
-  Send,
-  Heart,
   Sparkles,
 } from "lucide-react";
 import { Order } from "@/lib/types";
@@ -76,9 +73,6 @@ export function BillSplitPaymentModal({
     }, 2000);
   };
 
-  // UPI deep link
-  const upiPayUrl = `upi://pay?pa=nowave.pay@icici&pn=NoWaveRestaurant&am=${perPersonAmount}&cu=INR&tn=Table${order.tableNumber}_Bill`;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
       <motion.div
@@ -101,7 +95,7 @@ export function BillSplitPaymentModal({
           <div className="space-y-5">
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-amber">
-                Table {order.tableNumber} • Bill Breakdown
+                Table {order.tableNumber} • Table-Side Settlement
               </span>
               <div className="flex items-baseline justify-between mt-1">
                 <h3 className="font-serif text-2xl font-bold text-white">Your Bill</h3>
@@ -156,7 +150,7 @@ export function BillSplitPaymentModal({
             {/* Gratuity / Tip Selector */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs font-semibold text-zinc-400">
-                <span>Add Tip for Hospitality</span>
+                <span>Add Tip for Kitchen Staff</span>
                 <span className="text-amber">+{formatPrice(tipAmount)}</span>
               </div>
               <div className="grid grid-cols-4 gap-2">
@@ -219,12 +213,13 @@ export function BillSplitPaymentModal({
                     </div>
                     <div>
                       <p className="text-xs font-bold text-white">Debit / Credit Card</p>
-                      <p className="text-[10px] text-zinc-400">Tap or Chip & PIN</p>
+                      <p className="text-[10px] text-zinc-400">Tap to pay or swipe</p>
                     </div>
                   </div>
                   {selectedMethod === "card" && <Check className="w-4 h-4 text-amber" />}
                 </button>
 
+                {/* Cash Payment with NoWave Hardware Prompt */}
                 <button
                   type="button"
                   onClick={() => setSelectedMethod("cash")}
@@ -240,7 +235,7 @@ export function BillSplitPaymentModal({
                     </div>
                     <div>
                       <p className="text-xs font-bold text-white">Cash at Table</p>
-                      <p className="text-[10px] text-zinc-400">Server collects at table</p>
+                      <p className="text-[10px] text-amber">Tilt table lamp to Red to call cashier</p>
                     </div>
                   </div>
                   {selectedMethod === "cash" && <Check className="w-4 h-4 text-white" />}
@@ -248,13 +243,20 @@ export function BillSplitPaymentModal({
               </div>
             </div>
 
+            {/* Hardware Note when Cash is chosen */}
+            {selectedMethod === "cash" && (
+              <div className="p-3 rounded-xl bg-[#1d1815] border border-amber/40 text-[11px] text-amber leading-snug">
+                💡 <strong>Paying by Cash?</strong> Tilt your NoWave lamp to Red and our staff will collect it at your table.
+              </div>
+            )}
+
             {/* Pay CTA */}
             <button
               type="button"
               onClick={handlePay}
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 active:scale-[0.98] text-black font-extrabold text-sm tracking-wide shadow-xl shadow-emerald-500/20 flex items-center justify-between px-5 transition-all"
             >
-              <span>Pay at Table</span>
+              <span>{selectedMethod === "cash" ? "Confirm Cash Settlement" : "Pay at Table"}</span>
               <span>
                 {splitWays > 1 ? `${formatPrice(perPersonAmount)} each` : formatPrice(grandTotal)}
               </span>
@@ -269,7 +271,6 @@ export function BillSplitPaymentModal({
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-6 space-y-5"
           >
-            {/* Animated Green Checkmark */}
             <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 mx-auto shadow-2xl shadow-emerald-500/30">
               <Check className="w-10 h-10 stroke-[3]" />
             </div>
@@ -283,10 +284,9 @@ export function BillSplitPaymentModal({
               </p>
             </div>
 
-            {/* Receipt Notice */}
             <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl text-xs text-zinc-300 flex items-center justify-center gap-2">
               <Sparkles className="w-4 h-4 text-amber" />
-              <span>Digital receipt generated & synced</span>
+              <span>Digital Eco-Receipt generated & synchronized</span>
             </div>
 
             <button
@@ -294,12 +294,12 @@ export function BillSplitPaymentModal({
               onClick={() => setStep("review")}
               className="w-full py-3.5 rounded-xl bg-amber text-obsidian font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber/20 hover:brightness-110 active:scale-98 transition-all"
             >
-              Rate Your Experience ➔
+              Rate Your Dining Experience ➔
             </button>
           </motion.div>
         )}
 
-        {/* ── STEP 3: 1-TAP REVIEW (09 / REVIEW) ── */}
+        {/* ── STEP 3: 1-TAP REVIEW ── */}
         {step === "review" && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -308,17 +308,16 @@ export function BillSplitPaymentModal({
           >
             <div>
               <span className="text-[11px] font-bold uppercase tracking-widest text-amber">
-                Thank You for Dining With Us
+                NoWave Dining Feedback
               </span>
               <h3 className="font-serif text-2xl font-bold text-white mt-1">
                 How was your meal?
               </h3>
               <p className="text-xs text-zinc-400 mt-1">
-                Tap a star below for 1-tap feedback
+                Tap a star below for instant 1-tap feedback
               </p>
             </div>
 
-            {/* 5-Star Rating Buttons */}
             <div className="flex items-center justify-center gap-3">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -348,7 +347,7 @@ export function BillSplitPaymentModal({
                 animate={{ opacity: 1, y: 0 }}
                 className="p-3 bg-emerald-950/60 border border-emerald-500/60 rounded-xl text-emerald-400 text-xs font-bold"
               >
-                ✓ Review posted! Thank you!
+                ✓ Review logged to Executive Analytics! Thank you!
               </motion.div>
             )}
           </motion.div>

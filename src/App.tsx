@@ -3,6 +3,7 @@ import { CustomerMenu } from "@/components/CustomerMenu";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { AdminLogin } from "@/components/AdminLogin";
 import { AdminQRPage } from "@/components/AdminQRPage";
+import { StandaloneKDSPage } from "@/components/StandaloneKDSPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export function App() {
@@ -17,7 +18,7 @@ export function App() {
   return (
     <Routes>
       {/* 
-        - nowaveteam-123.vercel.app (Vercel Share link): Strictly MANAGER SITE
+        - nowaveteam-123.vercel.app (Share link): Strictly MANAGER SITE
         - nowaveteam-123-git-main-nothing-763e.vercel.app: Strictly CUSTOMER SITE
       */}
       <Route
@@ -25,8 +26,10 @@ export function App() {
         element={isCustomerDomain ? <CustomerMenu /> : <AdminLogin />}
       />
 
-      {/* Customer Menu direct view */}
+      {/* Customer Menu direct views */}
       <Route path="/menu" element={<CustomerMenu />} />
+      <Route path="/table" element={<CustomerMenu />} />
+      <Route path="/table/:tableId" element={<CustomerMenu />} />
 
       {/* Manager direct routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
@@ -45,6 +48,16 @@ export function App() {
         element={
           <ProtectedRoute>
             <AdminQRPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Dedicated Kitchen Display System (KDS) */}
+      <Route
+        path="/kds"
+        element={
+          <ProtectedRoute>
+            <StandaloneKDSPage />
           </ProtectedRoute>
         }
       />

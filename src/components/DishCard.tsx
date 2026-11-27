@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Flame, Star, Plus, Check, Utensils } from "lucide-react";
+import { Flame, Star, Plus, Check, Utensils, Ban } from "lucide-react";
 import { MenuItem } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 
@@ -39,14 +39,11 @@ function DietaryIndicator({ type }: { type: string }) {
   }
 
   return (
-    <div
-      className="inline-flex items-center gap-1.5"
-      title={`${label} dish`}
-    >
+    <div className="inline-flex items-center gap-1.5" title={`${label} dish`}>
       <div
-        className={`w-4 h-4 border-2 ${borderColor} rounded-[3px] flex items-center justify-center p-[2px] bg-obsidian`}
+        className={`w-3.5 h-3.5 border-2 ${borderColor} rounded-[3px] flex items-center justify-center p-[2px] bg-obsidian`}
       >
-        <div className={`w-2 h-2 rounded-full ${fillColor}`} />
+        <div className={`w-1.5 h-1.5 rounded-full ${fillColor}`} />
       </div>
       <span className="text-[11px] font-medium text-zinc-400 capitalize">
         {label}
@@ -74,9 +71,11 @@ export function DishCard({
   item,
   onImageClick,
   onAddNote,
+  onCustomize,
   isNoted = false,
 }: DishCardProps) {
   const [imageError, setImageError] = useState(false);
+  const isSoldOut = item.isStruckOut || !item.isAvailable;
 
   return (
     <motion.article
@@ -85,14 +84,18 @@ export function DishCard({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.25 } }}
       transition={{ duration: 0.2 }}
-      className="group bg-obsidian-card border border-obsidian-border hover:border-amber/40 rounded-2xl overflow-hidden shadow-xl transition-all duration-300 flex flex-col justify-between"
+      className={`group relative rounded-2xl overflow-hidden border shadow-xl transition-all duration-300 flex flex-col justify-between ${
+        isSoldOut
+          ? "bg-[#141312]/80 border-red-900/30 opacity-75 grayscale-[20%]"
+          : "bg-obsidian-card border-obsidian-border hover:border-amber/40"
+      }`}
     >
       <div>
         {/* Image / Fallback Container */}
         <div
           className="relative h-44 w-full bg-zinc-900 overflow-hidden cursor-pointer"
           onClick={() => {
-            if (item.imageUrl && !imageError && onImageClick) {
+            if (!isSoldOut && item.imageUrl && !imageError && onImageClick) {
               onImageClick(item.imageUrl, item.name);
             }
           }}
@@ -102,7 +105,9 @@ export function DishCard({
               src={item.imageUrl}
               alt={item.name}
               onError={() => setImageError(true)}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className={`w-full h-full object-cover transition-transform duration-500 ${
+                isSoldOut ? "filter brightness-50" : "group-hover:scale-105"
+              }`}
               loading="lazy"
             />
           ) : (
@@ -114,15 +119,24 @@ export function DishCard({
             </div>
           )}
 
+          {/* Sold Out Physical Stamped Overlay (Video & Spec requirement) */}
+          {isSoldOut && (
+            <div className="absolute inset-0 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+              <div className="px-3.5 py-1.5 rounded-lg border-2 border-red-500/80 bg-red-950/80 text-red-400 font-serif font-black tracking-widest uppercase text-xs shadow-2xl -rotate-6 transform scale-105">
+                SOLD OUT FOR TODAY
+              </div>
+            </div>
+          )}
+
           {/* Badges Overlay */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-            {item.isChefSpecial && (
+            {item.isChefSpecial && !isSoldOut && (
               <span className="bg-amber text-black font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1">
                 <Star className="w-3 h-3 fill-black text-black" />
                 Chef's Special
               </span>
             )}
-            {item.isBestseller && (
+            {item.isBestseller && !isSoldOut && (
               <span className="bg-red-600/90 backdrop-blur-sm text-white font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1">
                 <Flame className="w-3 h-3 fill-white text-white" />
                 Bestseller
@@ -130,8 +144,13 @@ export function DishCard({
             )}
           </div>
 
+          {/* Price Badge */}
           <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10">
-            <span className="text-amber font-mono font-bold text-sm">
+            <span
+              className={`font-mono font-bold text-sm ${
+                isSoldOut ? "line-through text-zinc-500" : "text-amber"
+              }`}
+            >
               {formatPrice(item.price)}
             </span>
           </div>
@@ -144,7 +163,13 @@ export function DishCard({
             <SpiceLevel level={item.spiceLevel} />
           </div>
 
-          <h3 className="font-serif font-bold text-base text-zinc-100 group-hover:text-amber transition-colors leading-snug">
+          <h3
+            className={`font-serif font-bold text-base leading-snug transition-colors ${
+              isSoldOut
+                ? "line-through text-zinc-500"
+                : "text-zinc-100 group-hover:text-amber"
+            }`}
+          >
             {item.name}
           </h3>
 
@@ -157,19 +182,37 @@ export function DishCard({
       {/* Action Footer */}
       <div className="p-4 pt-1 border-t border-obsidian-border/50 flex items-center justify-between">
         <div className="text-[11px] text-zinc-500 font-medium">
-          Table service
+          {isSoldOut ? (
+            <span className="text-red-400/80 font-semibold flex items-center gap-1">
+              <Ban className="w-3 h-3" /> Struck Out
+            </span>
+          ) : (
+            "NoWave Dining"
+          )}
         </div>
 
         <button
           type="button"
-          onClick={() => (onCustomize ? onCustomize(item) : onAddNote(item))}
+          disabled={isSoldOut}
+          onClick={() => {
+            if (isSoldOut) return;
+            if (onCustomize) {
+              onCustomize(item);
+            } else {
+              onAddNote(item);
+            }
+          }}
           className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md ${
-            isNoted
+            isSoldOut
+              ? "bg-zinc-800/50 text-zinc-600 border border-zinc-800 cursor-not-allowed"
+              : isNoted
               ? "bg-emerald-500/15 border border-emerald-500/40 text-emerald-400"
               : "bg-gradient-to-r from-amber to-amber-600 hover:brightness-110 text-obsidian shadow-amber/20"
           }`}
         >
-          {isNoted ? (
+          {isSoldOut ? (
+            <span>Sold Out</span>
+          ) : isNoted ? (
             <>
               <Check className="w-3.5 h-3.5" />
               In Cart

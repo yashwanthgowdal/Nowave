@@ -22,8 +22,6 @@ export function useRestaurantStore(tableNumber?: string | null) {
   return {
     orders: RestaurantStore.getAllOrders(),
     tables: RestaurantStore.getAllTables(),
-    activeServiceRequests: RestaurantStore.getActiveServiceRequests(),
-    allServiceRequests: RestaurantStore.getAllServiceRequests(),
     metrics: RestaurantStore.getLiveMetrics(),
     activeTableOrder,
     currentTableSession,
@@ -31,9 +29,6 @@ export function useRestaurantStore(tableNumber?: string | null) {
     createOrder: RestaurantStore.createOrder.bind(RestaurantStore),
     updateOrderStatus: RestaurantStore.updateOrderStatus.bind(RestaurantStore),
     updateItemStationStatus: RestaurantStore.updateItemStationStatus.bind(RestaurantStore),
-    callWaiter: RestaurantStore.callWaiter.bind(RestaurantStore),
-    acknowledgeServiceRequest: RestaurantStore.acknowledgeServiceRequest.bind(RestaurantStore),
-    resolveServiceRequest: RestaurantStore.resolveServiceRequest.bind(RestaurantStore),
     recordPayment: RestaurantStore.recordPayment.bind(RestaurantStore),
     submitReview: RestaurantStore.submitReview.bind(RestaurantStore),
     updateTableStatus: RestaurantStore.updateTableStatus.bind(RestaurantStore),
