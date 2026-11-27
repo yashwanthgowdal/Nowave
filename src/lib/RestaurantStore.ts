@@ -167,7 +167,7 @@ class RestaurantOperationsStore {
 
         const { data: dbOrders } = await supabase
           .from("orders")
-          .select("*")
+          .select("*, order_items(*)")
           .neq("status", "completed");
 
         if (dbOrders && dbOrders.length > 0) {
@@ -179,7 +179,35 @@ class RestaurantOperationsStore {
                 status: row.status as OrderStatus,
                 assignedWaiterId: row.assigned_waiter_id || undefined,
                 assignedWaiterName: row.assigned_waiter_name || undefined,
+                verificationOtp: row.verification_otp || this.orders[idx].verificationOtp,
               };
+            } else {
+              const mappedItems: OrderItemRecord[] = (row.order_items || []).map((oi: any) => ({
+                id: oi.id,
+                menuItemId: oi.menu_item_id,
+                name: oi.name,
+                price: Number(oi.price),
+                quantity: oi.quantity,
+                station: oi.station,
+                customization: oi.customization || { spiceLevel: "medium", portionSize: "full" },
+                stationStatus: oi.station_status || "pending",
+                prepSecondsElapsed: 0,
+              }));
+
+              this.orders.unshift({
+                id: row.id,
+                orderNumber: row.order_number,
+                tableNumber: row.table_number,
+                tableLabel: row.table_label || `Table ${row.table_number}`,
+                items: mappedItems,
+                totalAmount: Number(row.total_amount),
+                status: row.status as OrderStatus,
+                verificationOtp: row.verification_otp,
+                assignedWaiterId: row.assigned_waiter_id || undefined,
+                assignedWaiterName: row.assigned_waiter_name || undefined,
+                createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+                estimatedMinutes: row.estimated_minutes || 12,
+              });
             }
           });
           this.persist();
@@ -221,7 +249,7 @@ class RestaurantOperationsStore {
     this.notify();
   }
 
-  private handleSupabaseOrderChange(payload: any) {
+  private async handleSupabaseOrderChange(payload: any) {
     if (!payload?.new) return;
     const row = payload.new;
     const idx = this.orders.findIndex((o) => o.id === row.id || o.orderNumber === row.order_number);
@@ -231,7 +259,44 @@ class RestaurantOperationsStore {
         status: row.status as OrderStatus,
         assignedWaiterId: row.assigned_waiter_id || undefined,
         assignedWaiterName: row.assigned_waiter_name || undefined,
+        verificationOtp: row.verification_otp || this.orders[idx].verificationOtp,
       };
+    } else {
+      let items: OrderItemRecord[] = [];
+      if (supabase && isSupabaseConfigured) {
+        try {
+          const { data: dbItems } = await supabase.from("order_items").select("*").eq("order_id", row.id);
+          if (dbItems && dbItems.length > 0) {
+            items = dbItems.map((oi: any) => ({
+              id: oi.id,
+              menuItemId: oi.menu_item_id,
+              name: oi.name,
+              price: Number(oi.price),
+              quantity: oi.quantity,
+              station: oi.station,
+              customization: oi.customization || { spiceLevel: "medium", portionSize: "full" },
+              stationStatus: oi.station_status || "pending",
+              prepSecondsElapsed: 0,
+            }));
+          }
+        } catch {}
+      }
+
+      this.orders.unshift({
+        id: row.id,
+        orderNumber: row.order_number,
+        tableNumber: row.table_number,
+        tableLabel: row.table_label || `Table ${row.table_number}`,
+        items,
+        totalAmount: Number(row.total_amount),
+        status: row.status as OrderStatus,
+        verificationOtp: row.verification_otp,
+        assignedWaiterId: row.assigned_waiter_id || undefined,
+        assignedWaiterName: row.assigned_waiter_name || undefined,
+        createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+        estimatedMinutes: row.estimated_minutes || 12,
+      });
+      playOrderChime();
     }
     this.persist();
     this.notify();
@@ -550,18 +615,43 @@ class RestaurantOperationsStore {
           assigned_waiter_name: newOrder.assignedWaiterName,
           estimated_minutes: newOrder.estimatedMinutes,
         })
-        .then();
+        .then(({ error }: any) => {
+          if (error) console.error("⚡ Supabase insert order error:", error);
+        });
+
+      if (orderItems.length > 0) {
+        const dbItems = orderItems.map((oi) => ({
+          id: oi.id,
+          order_id: newOrder.id,
+          menu_item_id: oi.menuItemId,
+          name: oi.name,
+          price: oi.price,
+          quantity: oi.quantity,
+          station: oi.station,
+          customization: oi.customization,
+          station_status: oi.stationStatus,
+        }));
+        supabase
+          .from("order_items")
+          .insert(dbItems)
+          .then(({ error }: any) => {
+            if (error) console.error("⚡ Supabase insert order_items error:", error);
+          });
+      }
 
       supabase
         .from("restaurant_tables")
-        .update({
+        .upsert({
+          table_number: table.tableNumber,
+          table_label: table.tableLabel || `Table ${table.tableNumber}`,
           status: "awaiting_verification",
           verification_otp: otp,
           current_order_id: newOrder.id,
           last_active: new Date().toISOString(),
         })
-        .eq("table_number", table.tableNumber)
-        .then();
+        .then(({ error }: any) => {
+          if (error) console.error("⚡ Supabase upsert table error:", error);
+        });
     }
 
     return newOrder;

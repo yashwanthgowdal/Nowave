@@ -38,7 +38,12 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({
         status: "error",
         databaseConnected: false,
-        error: tablesErr.message,
+        supabaseConfigured: true,
+        supabaseUrl: supabaseUrl ? supabaseUrl.replace(/https:\/\/(.{4}).*(\..*)/, "https://$1***$2") : "missing",
+        error: tablesErr.message || JSON.stringify(tablesErr),
+        errorCode: tablesErr.code,
+        errorDetails: tablesErr.details,
+        errorHint: tablesErr.hint,
         timestamp: new Date().toISOString(),
       });
     }
@@ -49,6 +54,7 @@ export default async function handler(req: any, res: any) {
       realtimeEnabled: true,
       tablesCount: tablesCount ?? 0,
       ordersCount: ordersCount ?? 0,
+      supabaseUrl: supabaseUrl.replace(/https:\/\/(.{4}).*(\..*)/, "https://$1***$2"),
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {
@@ -56,6 +62,7 @@ export default async function handler(req: any, res: any) {
       status: "error",
       databaseConnected: false,
       error: err?.message || "Unknown error",
+      stack: err?.stack,
       timestamp: new Date().toISOString(),
     });
   }

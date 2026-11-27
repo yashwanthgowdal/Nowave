@@ -105,12 +105,49 @@ export function WaiterFloorDashboard() {
     setTimeout(() => setActionSuccess(null), 3000);
   };
 
-  // Filter urgent tables awaiting verification
-  const pendingVerificationTables = tables.filter(
-    (t) =>
-      t.status === "awaiting_verification" ||
-      orders.some((o) => o.tableNumber === t.tableNumber && o.status === "awaiting_verification")
-  );
+  // Filter urgent tables awaiting verification (combines tables and live orders)
+  const pendingVerificationTables = React.useMemo(() => {
+    const list: TableSession[] = [];
+    const seen = new Set<string>();
+
+    // 1. Tables marked awaiting_verification or having an unverified order
+    tables.forEach((t) => {
+      const norm = t.tableNumber.trim().toLowerCase();
+      const hasOrder = orders.some(
+        (o) =>
+          (o.tableNumber.trim().toLowerCase() === norm ||
+            (o.tableLabel && t.tableLabel && o.tableLabel.trim().toLowerCase() === t.tableLabel.trim().toLowerCase())) &&
+          o.status === "awaiting_verification"
+      );
+      if (t.status === "awaiting_verification" || hasOrder) {
+        list.push(t);
+        seen.add(norm);
+      }
+    });
+
+    // 2. Orders awaiting verification whose table record hasn't synced yet (dynamic table fallback)
+    orders.forEach((o) => {
+      const norm = o.tableNumber.trim().toLowerCase();
+      if (o.status === "awaiting_verification" && !seen.has(norm)) {
+        list.push({
+          tableNumber: o.tableNumber,
+          tableLabel: o.tableLabel || `Table ${o.tableNumber}`,
+          status: "awaiting_verification",
+          verificationOtp: o.verificationOtp,
+          assignedWaiterId: o.assignedWaiterId,
+          assignedWaiterName: o.assignedWaiterName,
+          otpAttempts: 0,
+          currentOrderId: o.id,
+          guestCount: 2,
+          totalSpent: o.totalAmount,
+          lastActiveAt: o.createdAt || Date.now(),
+        });
+        seen.add(norm);
+      }
+    });
+
+    return list;
+  }, [tables, orders]);
 
   // Filter tables assigned to current waiter
   const myAssignedTables = tables.filter(
@@ -311,11 +348,15 @@ export function WaiterFloorDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {pendingVerificationTables.map((table) => {
                 const activeOrder = orders.find(
-                  (o) => o.tableNumber === table.tableNumber && o.status === "awaiting_verification"
+                  (o) =>
+                    (o.tableNumber.trim().toLowerCase() === table.tableNumber.trim().toLowerCase() ||
+                      (o.tableLabel && table.tableLabel && o.tableLabel.trim().toLowerCase() === table.tableLabel.trim().toLowerCase())) &&
+                    o.status === "awaiting_verification"
                 );
                 const isClaimedByMe = table.assignedWaiterId === activeWaiter.id;
                 const isClaimedByOther =
                   table.assignedWaiterId && table.assignedWaiterId !== activeWaiter.id;
+                const otpDisplay = table.verificationOtp || activeOrder?.verificationOtp || "4829";
 
                 return (
                   <div
@@ -331,7 +372,7 @@ export function WaiterFloorDashboard() {
                     {/* Header */}
                     <div className="flex items-center justify-between">
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber/20 border border-amber/40 text-amber font-mono font-bold text-sm">
-                        {table.tableLabel || `Table ${table.tableNumber}`}
+                        🔔 {table.tableLabel || `Table ${table.tableNumber}`}
                       </div>
                       <div className="text-xs text-zinc-400 font-mono">
                         {activeOrder ? `₹${activeOrder.totalAmount}` : "New Order"}
@@ -339,7 +380,7 @@ export function WaiterFloorDashboard() {
                     </div>
 
                     {/* Order Items Preview */}
-                    {activeOrder && (
+                    {activeOrder && activeOrder.items.length > 0 && (
                       <div className="p-3 rounded-2xl bg-black/40 border border-white/5 text-xs space-y-1">
                         <div className="font-semibold text-zinc-300">Order Items:</div>
                         <div className="text-zinc-400 truncate">
@@ -357,7 +398,7 @@ export function WaiterFloorDashboard() {
                           </div>
                           {/* Glowing 4-Digit Display */}
                           <div className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-black/80 border-2 border-amber shadow-lg shadow-amber/30 text-amber font-mono text-3xl font-extrabold tracking-[0.25em]">
-                            {table.verificationOtp || "4829"}
+                            {otpDisplay}
                           </div>
                           <p className="text-[11px] text-zinc-400">
                             Walk to {table.tableLabel || `Table ${table.tableNumber}`}. Confirm guests are seated and give them this code.

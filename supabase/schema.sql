@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
 -- ───────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS orders (
-  id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                   TEXT PRIMARY KEY,
   order_number         TEXT NOT NULL UNIQUE,
   table_number         TEXT NOT NULL,
   table_label          TEXT NOT NULL DEFAULT '',
@@ -130,8 +130,8 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  order_id        UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  id              TEXT PRIMARY KEY,
+  order_id        TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   menu_item_id    TEXT NOT NULL,
   name            TEXT NOT NULL,
   price           DECIMAL(10, 2) NOT NULL,
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 CREATE TABLE IF NOT EXISTS payments (
   id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  order_id            UUID NOT NULL REFERENCES orders(id),
+  order_id            TEXT NOT NULL REFERENCES orders(id),
   table_number        TEXT NOT NULL,
   split_ways          INT NOT NULL DEFAULT 1,
   per_person_amount   DECIMAL(10, 2) NOT NULL,
@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS payments (
 
 CREATE TABLE IF NOT EXISTS customer_reviews (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  order_id      UUID NOT NULL REFERENCES orders(id),
+  order_id      TEXT NOT NULL REFERENCES orders(id),
   table_number  TEXT NOT NULL,
   rating        DECIMAL(2, 1) NOT NULL CHECK (rating >= 1.0 AND rating <= 5.0),
   feedback      TEXT,
