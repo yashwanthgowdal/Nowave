@@ -18,6 +18,7 @@ import { BillSplitPaymentModal } from "@/components/BillSplitPaymentModal";
 import { NoWaveLampBanner } from "@/components/NoWaveLampBanner";
 import { useRestaurantStore } from "@/lib/useRestaurantStore";
 import { getOrCreateTableSession } from "@/lib/tableSession";
+import { TableOrderVerificationModal } from "@/components/TableOrderVerificationModal";
 
 type FilterType = "all" | "veg" | "nonveg" | "special" | "bestseller";
 
@@ -37,7 +38,12 @@ export function CustomerMenu() {
   }, [tableParam]);
 
   const { items, categories, loading } = useRealtimeMenu();
-  const { activeTableOrder, createOrder } = useRestaurantStore(tableParam);
+  const {
+    activeTableOrder,
+    currentTableSession,
+    createOrder,
+    verifyOrderOtp,
+  } = useRestaurantStore(tableParam);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
@@ -48,8 +54,16 @@ export function CustomerMenu() {
 
   // Modals state
   const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
+  const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isWaitScreenOpen, setIsWaitScreenOpen] = useState(false);
   const [isPayBillOpen, setIsPayBillOpen] = useState(false);
+
+  // Auto-prompt verification modal if order is awaiting waiter confirmation
+  useEffect(() => {
+    if (activeTableOrder?.status === "awaiting_verification") {
+      setIsVerificationOpen(true);
+    }
+  }, [activeTableOrder?.status]);
 
   // Category section refs for smooth scrolling
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -170,9 +184,18 @@ export function CustomerMenu() {
     });
 
     setShortlist([]);
-    setTimeout(() => {
-      setIsWaitScreenOpen(true);
-    }, 1600);
+    setIsVerificationOpen(true);
+  };
+
+  const handleVerifyOtp = (code: string) => {
+    const res = verifyOrderOtp(tableParam, code);
+    if (res.success) {
+      setTimeout(() => {
+        setIsVerificationOpen(false);
+        setIsWaitScreenOpen(true);
+      }, 1000);
+    }
+    return res;
   };
 
   const scrollToCategory = (catId: string, slug: string) => {
@@ -232,38 +255,69 @@ export function CustomerMenu() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-3.5 rounded-2xl bg-gradient-to-r from-amber/15 via-[#1a1816] to-[#1a1816] border border-amber/40 shadow-xl flex items-center justify-between"
+            className={`p-3.5 rounded-2xl border shadow-xl flex items-center justify-between ${
+              activeTableOrder.status === "awaiting_verification"
+                ? "bg-gradient-to-r from-amber/20 via-[#1c1813] to-[#181615] border-amber/60 animate-pulse"
+                : "bg-gradient-to-r from-emerald-950/20 via-[#1a1816] to-[#1a1816] border-emerald-500/40"
+            }`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber/20 border border-amber/30 flex items-center justify-center text-amber animate-pulse">
+              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center ${
+                activeTableOrder.status === "awaiting_verification"
+                  ? "bg-amber/25 border-amber/40 text-amber"
+                  : "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+              }`}>
                 <ChefHat className="w-5 h-5" />
               </div>
               <div className="text-left">
                 <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <span>Order {activeTableOrder.orderNumber} is {activeTableOrder.status}</span>
-                  <span className="w-2 h-2 rounded-full bg-amber animate-ping" />
+                  {activeTableOrder.status === "awaiting_verification" ? (
+                    <>
+                      <span className="text-amber">Order {activeTableOrder.orderNumber} • Needs Waiter OTP</span>
+                      <span className="w-2 h-2 rounded-full bg-amber animate-ping" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Order {activeTableOrder.orderNumber} is {activeTableOrder.status}</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    </>
+                  )}
                 </p>
                 <p className="text-[10px] text-zinc-400">
-                  Tap to track live cooking timer & table-side checkout
+                  {activeTableOrder.status === "awaiting_verification"
+                    ? "Waiter is arriving with your 4-digit verification code"
+                    : "Tap to track live cooking timer & table-side checkout"}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsPayBillOpen(true)}
-                className="py-1.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white transition-all"
-              >
-                Bill
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsWaitScreenOpen(true)}
-                className="py-1.5 px-3.5 rounded-xl bg-amber hover:bg-amber-500 text-obsidian text-xs font-extrabold shadow-md shadow-amber/20 transition-all"
-              >
-                Track Live
-              </button>
+              {activeTableOrder.status === "awaiting_verification" ? (
+                <button
+                  type="button"
+                  onClick={() => setIsVerificationOpen(true)}
+                  className="py-1.5 px-3.5 rounded-xl bg-amber hover:bg-amber-400 text-obsidian text-xs font-extrabold shadow-md shadow-amber/20 transition-all"
+                >
+                  Enter Code
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsPayBillOpen(true)}
+                    className="py-1.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white transition-all"
+                  >
+                    Bill
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsWaitScreenOpen(true)}
+                    className="py-1.5 px-3.5 rounded-xl bg-amber hover:bg-amber-500 text-obsidian text-xs font-extrabold shadow-md shadow-amber/20 transition-all"
+                  >
+                    Track Live
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         </div>
@@ -419,6 +473,16 @@ export function CustomerMenu() {
         isOpen={Boolean(customizingItem)}
         onClose={() => setCustomizingItem(null)}
         onAddToCart={handleAddCustomizedItem}
+      />
+
+      {/* ─── 4b. ANTI-FAKE ORDER TABLE OTP VERIFICATION MODAL ─── */}
+      <TableOrderVerificationModal
+        isOpen={isVerificationOpen}
+        tableNumber={tableParam}
+        tableSession={currentTableSession}
+        activeOrder={activeTableOrder}
+        onVerify={handleVerifyOtp}
+        onClose={() => setIsVerificationOpen(false)}
       />
 
       {/* ─── 5. SMART WAIT EXPERIENCE SCREEN ─── */}

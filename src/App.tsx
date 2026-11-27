@@ -4,6 +4,7 @@ import { AdminDashboard } from "@/components/AdminDashboard";
 import { AdminLogin } from "@/components/AdminLogin";
 import { AdminQRPage } from "@/components/AdminQRPage";
 import { StandaloneKDSPage } from "@/components/StandaloneKDSPage";
+import { WaiterFloorDashboard } from "@/components/WaiterFloorDashboard";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export function App() {
@@ -51,6 +52,9 @@ export function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* Waiter Floor Dashboard (Staff PIN Protected) */}
+      <Route path="/waiter" element={<WaiterFloorDashboard />} />
 
       {/* Dedicated Kitchen Display System (KDS) */}
       <Route

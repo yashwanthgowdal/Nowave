@@ -134,6 +134,12 @@ export const reviewSchema = z.object({
   feedback: z.string().max(500).optional().transform((f) => (f ? sanitize(f) : "")),
 }).strict();
 
+// ─── Table OTP Verification Schema ───
+export const tableOtpVerificationSchema = z.object({
+  tableNumber: z.string().min(1).max(10).transform(sanitize),
+  otp: z.string().regex(/^\d{4}$/, "Must be a 4-digit code"),
+}).strict();
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type MenuItemInput = z.infer<typeof menuItemSchema>;
 export type CategoryInput = z.infer<typeof categorySchema>;

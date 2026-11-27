@@ -1,12 +1,69 @@
 -- ═══════════════════════════════════════════════════════════
 -- NoWave Smart Dining Ecosystem — Supabase PostgreSQL Schema
--- Complete RLS & Anti-Spoofing Architecture
+-- Realtime WebSocket Sync, Waiter Claim & Table OTP System
 -- ═══════════════════════════════════════════════════════════
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ───────────────────────────────────────────────────────────
--- 1. CORE MENU & CATEGORIES
+-- 1. WAITERS & STAFF DIRECTORY
+-- ───────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS waiters (
+  id           TEXT PRIMARY KEY,
+  name         TEXT NOT NULL,
+  pin          TEXT NOT NULL DEFAULT '1234',
+  role         TEXT NOT NULL DEFAULT 'waiter' CHECK (role IN ('waiter', 'lead')),
+  is_active    BOOLEAN NOT NULL DEFAULT TRUE,
+  avatar_color TEXT NOT NULL DEFAULT '#C59B43',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Seed Default Staff (Rahul, Priya, Karthik, Sneha)
+INSERT INTO waiters (id, name, pin, role, is_active, avatar_color)
+VALUES
+  ('w1', 'Rahul', '1234', 'lead', true, '#C59B43'),
+  ('w2', 'Priya', '1234', 'waiter', true, '#3B82F6'),
+  ('w3', 'Karthik', '1234', 'waiter', true, '#10B981'),
+  ('w4', 'Sneha', '1234', 'waiter', true, '#EC4899')
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  is_active = EXCLUDED.is_active;
+
+-- ───────────────────────────────────────────────────────────
+-- 2. RESTAURANT TABLES (LIFECYCLE STATE MACHINE)
+-- ───────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS restaurant_tables (
+  table_number         TEXT PRIMARY KEY,
+  status               TEXT NOT NULL DEFAULT 'available'
+                       CHECK (status IN ('available', 'browsing', 'awaiting_verification', 'ordered', 'cooking', 'eating', 'paid')),
+  assigned_waiter_id   TEXT REFERENCES waiters(id) ON DELETE SET NULL,
+  assigned_waiter_name TEXT,
+  verification_otp     TEXT, -- 4-digit numeric code e.g. '4829'
+  otp_attempts         INT NOT NULL DEFAULT 0,
+  current_order_id     TEXT,
+  session_token        TEXT,
+  guest_count          INT NOT NULL DEFAULT 2,
+  total_spent          DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  last_active          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Seed Tables T1 through T8
+INSERT INTO restaurant_tables (table_number, status, verification_otp, guest_count, total_spent)
+VALUES
+  ('1', 'available', '4821', 2, 0),
+  ('2', 'available', '7392', 4, 0),
+  ('3', 'available', '5129', 2, 0),
+  ('4', 'available', '8301', 4, 0),
+  ('5', 'available', '2948', 2, 0),
+  ('6', 'available', '6173', 4, 0),
+  ('7', 'available', '3502', 6, 0),
+  ('8', 'available', '9416', 4, 0)
+ON CONFLICT (table_number) DO NOTHING;
+
+-- ───────────────────────────────────────────────────────────
+-- 3. CORE MENU & CATEGORIES
 -- ───────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -42,27 +99,22 @@ CREATE TABLE IF NOT EXISTS menu_items (
 );
 
 -- ───────────────────────────────────────────────────────────
--- 2. TABLE SESSIONS & ORDERS (KDS)
+-- 4. ORDERS & KITCHEN TICKETS (KDS)
 -- ───────────────────────────────────────────────────────────
 
-CREATE TABLE IF NOT EXISTS table_sessions (
-  table_number  TEXT PRIMARY KEY,
-  status        TEXT NOT NULL DEFAULT 'browsing' CHECK (status IN ('browsing', 'ordered', 'cooking', 'eating', 'paid')),
-  session_token TEXT,
-  guest_count   INT DEFAULT 2,
-  total_spent   DECIMAL(10, 2) DEFAULT 0,
-  last_active   TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS orders (
-  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  order_number      TEXT NOT NULL UNIQUE,
-  table_number      TEXT NOT NULL,
-  total_amount      DECIMAL(10, 2) NOT NULL,
-  status            TEXT NOT NULL DEFAULT 'cooking' CHECK (status IN ('placed', 'cooking', 'ready', 'served', 'completed')),
-  estimated_minutes INT NOT NULL DEFAULT 12,
-  session_token     TEXT,
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_number         TEXT NOT NULL UNIQUE,
+  table_number         TEXT NOT NULL REFERENCES restaurant_tables(table_number) ON DELETE CASCADE,
+  total_amount         DECIMAL(10, 2) NOT NULL,
+  status               TEXT NOT NULL DEFAULT 'awaiting_verification'
+                       CHECK (status IN ('awaiting_verification', 'confirmed', 'cooking', 'ready', 'served', 'completed', 'cancelled')),
+  verification_otp     TEXT,
+  assigned_waiter_id   TEXT,
+  assigned_waiter_name TEXT,
+  estimated_minutes    INT NOT NULL DEFAULT 12,
+  session_token        TEXT,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
@@ -79,7 +131,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 );
 
 -- ───────────────────────────────────────────────────────────
--- 3. PAYMENTS & REVIEWS
+-- 5. PAYMENTS & REVIEWS
 -- ───────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -112,94 +164,47 @@ CREATE TABLE IF NOT EXISTS admin_users (
 );
 
 -- ───────────────────────────────────────────────────────────
--- 4. ROW-LEVEL SECURITY (RLS) POLICIES
+-- 6. ROW-LEVEL SECURITY (RLS) POLICIES
 -- ───────────────────────────────────────────────────────────
 
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE table_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE waiters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE restaurant_tables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_reviews ENABLE ROW LEVEL SECURITY;
-ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 
--- Public / Anon: READ-ONLY Menu, Session, and Validated Insert for orders & payments
+-- Public / Anon: Read menu, tables, and submit orders/payments
 CREATE POLICY "Public read categories" ON categories FOR SELECT TO anon USING (true);
 CREATE POLICY "Public read menu_items" ON menu_items FOR SELECT TO anon USING (true);
-CREATE POLICY "Public read table_sessions" ON table_sessions FOR SELECT TO anon USING (true);
+CREATE POLICY "Public read waiters" ON waiters FOR SELECT TO anon USING (true);
+CREATE POLICY "Public read restaurant_tables" ON restaurant_tables FOR SELECT TO anon USING (true);
+CREATE POLICY "Public update browsing tables" ON restaurant_tables FOR UPDATE TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Public insert orders" ON orders FOR INSERT TO anon WITH CHECK (total_amount > 0);
 CREATE POLICY "Public insert order_items" ON order_items FOR INSERT TO anon WITH CHECK (quantity > 0);
 CREATE POLICY "Public read own orders" ON orders FOR SELECT TO anon USING (true);
 CREATE POLICY "Public insert payments" ON payments FOR INSERT TO anon WITH CHECK (total_paid > 0);
 CREATE POLICY "Public insert reviews" ON customer_reviews FOR INSERT TO anon WITH CHECK (rating >= 1);
 
--- Authenticated Staff: Full Access
+-- Staff / Authenticated: Full Management Access
 CREATE POLICY "Staff full categories" ON categories FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Staff full menu_items" ON menu_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Staff full table_sessions" ON table_sessions FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Staff full waiters" ON waiters FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Staff full restaurant_tables" ON restaurant_tables FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Staff full orders" ON orders FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Staff full order_items" ON order_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Staff full payments" ON payments FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Staff full reviews" ON customer_reviews FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ───────────────────────────────────────────────────────────
--- 5. REALTIME REPLICATION
+-- 7. REALTIME PUBLICATION SETUP
 -- ───────────────────────────────────────────────────────────
 
-ALTER PUBLICATION supabase_realtime ADD TABLE menu_items;
+ALTER PUBLICATION supabase_realtime ADD TABLE restaurant_tables;
 ALTER PUBLICATION supabase_realtime ADD TABLE orders;
 ALTER PUBLICATION supabase_realtime ADD TABLE order_items;
-ALTER PUBLICATION supabase_realtime ADD TABLE table_sessions;
-
--- ───────────────────────────────────────────────────────────
--- 6. SEED DATA (Realistic Indian Restaurant: 12 dishes, 2 struck out)
--- ───────────────────────────────────────────────────────────
-
-DO $$
-DECLARE
-  cat_starters UUID;
-  cat_mains UUID;
-  cat_breads UUID;
-  cat_drinks UUID;
-  cat_desserts UUID;
-BEGIN
-  INSERT INTO categories (name, slug, sort_order) VALUES
-    ('Starters & Small Plates', 'starters', 0)
-    ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id INTO cat_starters;
-
-  INSERT INTO categories (name, slug, sort_order) VALUES
-    ('Main Curries & Biryanis', 'mains', 1)
-    ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id INTO cat_mains;
-
-  INSERT INTO categories (name, slug, sort_order) VALUES
-    ('Artisanal Tandoor Breads', 'breads', 2)
-    ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id INTO cat_breads;
-
-  INSERT INTO categories (name, slug, sort_order) VALUES
-    ('Craft Beverages & Lassi', 'drinks', 3)
-    ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id INTO cat_drinks;
-
-  INSERT INTO categories (name, slug, sort_order) VALUES
-    ('Royal Desserts', 'desserts', 4)
-    ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id INTO cat_desserts;
-
-  -- 12 Curated Dishes (2 marked struck out: Ghee Roast Chicken & Pistachio Kulfi)
-  INSERT INTO menu_items (name, description, price, half_price, dietary_type, spice_level, station, allergens, is_chef_special, is_bestseller, is_struck_out, is_available, category_id, sort_order, image_url) VALUES
-    ('Truffle Malai Paneer Tikka', 'Charred artisanal cottage cheese steeped in black truffle oil, green cardamom cream, and roasted coriander emulsion.', 390, 240, 'veg', 1, 'tandoor', ARRAY['Dairy'], true, true, false, true, cat_starters, 0, 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=700&q=80'),
-    ('Gunpowder Crispy Corn Ribs', 'Char-grilled sweet corn ribs tossed in southern Podi masala, kaffir lime zest, and smoked spiced butter.', 280, 180, 'veg', 2, 'tandoor', ARRAY['Dairy'], false, true, false, true, cat_starters, 1, 'https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=700&q=80'),
-    ('Ghee Roast Chicken Skewers', 'Kundapur slow-roasted chicken supreme in artisanal clarified butter, Byadgi chillies, and curry leaf ash.', 440, 280, 'nonveg', 4, 'tandoor', ARRAY['Dairy'], true, false, true, false, cat_starters, 2, 'https://images.unsplash.com/photo-1527477378776-6469cf361548?w=700&q=80'),
-    
-    ('Old Delhi Butter Chicken', 'Smoked clay-oven pulled chicken braised in velvety sun-ripened tomato gravy, fenugreek leaves, and churned white butter.', 460, 290, 'nonveg', 2, 'curry', ARRAY['Dairy', 'Nuts'], true, true, false, true, cat_mains, 0, 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=700&q=80'),
-    ('Dal Makhani 24-Hour Simmer', 'Black lentils slow-cooked overnight over glowing charcoal with vine-ripened tomatoes, garlic, and fresh cream.', 360, 230, 'veg', 1, 'curry', ARRAY['Dairy'], true, true, false, true, cat_mains, 1, 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=700&q=80'),
-    ('Awadhi Dum Gosht Biryani', 'Aged long-grain basmati rice and tender lamb shank slow-steamed under dough seal with saffron and rose water.', 540, 350, 'nonveg', 3, 'curry', ARRAY['Dairy'], true, false, false, true, cat_mains, 2, 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=700&q=80'),
-    ('Paneer Lababdar', 'Char-grilled cottage cheese in a chunky onion-tomato reduction with grated paneer and freshly ground spices.', 380, 240, 'veg', 2, 'curry', ARRAY['Dairy', 'Nuts'], false, false, false, true, cat_mains, 3, 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=700&q=80'),
-
-    ('Smoked Garlic Naan', 'Hand-stretched sourdough naan studded with toasted garlic flakes and brushed with cultured butter.', 90, 60, 'veg', 1, 'tandoor', ARRAY['Gluten', 'Dairy'], false, true, false, true, cat_breads, 0, 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=700&q=80'),
-    ('Laccha Paratha', 'Multi-layered flaky whole wheat bread cooked golden crisp on the tandoor walls.', 80, 50, 'veg', 1, 'tandoor', ARRAY['Gluten', 'Dairy'], false, false, false, true, cat_breads, 1, 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=700&q=80'),
-
-    ('Alphonso Mango Lassi', 'Thick organic yogurt whipped with Ratnagiri Alphonso mango pulp, green cardamom, and crushed pistachios.', 160, 100, 'veg', 1, 'drinks', ARRAY['Dairy', 'Nuts'], false, true, false, true, cat_drinks, 0, 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=700&q=80'),
-    ('Kulhad Masala Chai', 'Slow-brewed Assam CTC black tea with crushed ginger, cloves, and cinnamon served steaming in earthen clay pot.', 70, 45, 'veg', 1, 'drinks', ARRAY['Dairy'], false, false, false, true, cat_drinks, 1, 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=700&q=80'),
-
-    ('Pistachio Saffron Kulfi', 'Traditional slow-reduced frozen milk dessert infused with Kashmiri saffron strands and silver leaf.', 190, 120, 'veg', 1, 'desserts', ARRAY['Dairy', 'Nuts'], true, false, true, false, cat_desserts, 0, 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=700&q=80');
-END $$;
+ALTER PUBLICATION supabase_realtime ADD TABLE waiters;
+ALTER PUBLICATION supabase_realtime ADD TABLE menu_items;
+ALTER PUBLICATION supabase_realtime ADD TABLE categories;

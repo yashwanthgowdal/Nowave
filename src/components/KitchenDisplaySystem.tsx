@@ -35,9 +35,13 @@ export function KitchenDisplaySystem() {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter active cooking / pending orders
+  // Filter active cooking / pending orders (ONLY verified orders reach KDS; unverified orders are excluded)
   const activeOrders = orders.filter(
-    (o) => o.status === "placed" || o.status === "cooking" || o.status === "ready"
+    (o) =>
+      o.status === "confirmed" ||
+      o.status === "cooking" ||
+      o.status === "ready" ||
+      o.status === "placed"
   );
 
   return (
@@ -208,9 +212,14 @@ function TicketCard({
             <span className="px-2.5 py-1 rounded-lg bg-amber text-obsidian text-xs font-black font-mono">
               T{order.tableNumber}
             </span>
-            <span className="font-mono text-xs font-bold text-white">
-              {order.orderNumber}
-            </span>
+            <div>
+              <div className="font-mono text-xs font-bold text-white">
+                {order.orderNumber}
+              </div>
+              <div className="text-[10px] text-zinc-400">
+                {order.assignedWaiterName ? `👤 Server: ${order.assignedWaiterName}` : "Unassigned"}
+              </div>
+            </div>
           </div>
 
           <div

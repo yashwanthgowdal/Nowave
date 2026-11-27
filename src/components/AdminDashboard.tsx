@@ -239,13 +239,27 @@ export function AdminDashboard() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
+              to="/waiter"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber/15 hover:bg-amber/25 text-amber text-xs font-bold border border-amber/30 transition-colors"
+            >
+              <span>Waiter Floor</span>
+            </Link>
+
+            <Link
+              to="/kds"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs border border-obsidian-border transition-colors"
+            >
+              <span>Kitchen KDS</span>
+            </Link>
+
+            <Link
               to="/menu"
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs border border-obsidian-border transition-colors"
             >
               <ExternalLink className="w-3.5 h-3.5 text-amber" />
-              <span>Preview Customer Menu</span>
+              <span>Customer Menu</span>
             </Link>
 
             <button

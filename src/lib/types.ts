@@ -53,7 +53,14 @@ export interface ShortlistItem {
   note?: string;
 }
 
-export type OrderStatus = "placed" | "cooking" | "ready" | "served" | "completed";
+export type OrderStatus =
+  | "awaiting_verification"
+  | "confirmed"
+  | "cooking"
+  | "ready"
+  | "served"
+  | "completed"
+  | "cancelled";
 
 export interface OrderItemRecord {
   id: string;
@@ -77,14 +84,37 @@ export interface Order {
   createdAt: number;
   estimatedMinutes: number;
   sessionToken?: string;
+  verificationOtp?: string; // 4-digit code e.g. "4829"
+  assignedWaiterId?: string;
+  assignedWaiterName?: string;
 }
 
-export type TableStatus = "browsing" | "ordered" | "cooking" | "eating" | "paid";
+export type TableStatus =
+  | "available"
+  | "browsing"
+  | "awaiting_verification"
+  | "ordered"
+  | "cooking"
+  | "eating"
+  | "paid";
+
+export interface Waiter {
+  id: string;
+  name: string;
+  pin: string; // 4-digit pin e.g. "1234"
+  role: "waiter" | "lead";
+  isActive: boolean;
+  avatarColor?: string;
+}
 
 export interface TableSession {
   tableNumber: string;
   status: TableStatus;
   currentOrderId?: string;
+  assignedWaiterId?: string;
+  assignedWaiterName?: string;
+  verificationOtp?: string; // 4-digit OTP e.g. "4829"
+  otpAttempts?: number; // max 5 attempts
   guestCount?: number;
   totalSpent?: number;
   sessionToken?: string;
@@ -120,7 +150,11 @@ export interface RealtimeMenuEvent {
     | "category_updated"
     | "reset_all"
     | "order_created"
+    | "order_verified"
     | "order_updated"
+    | "table_claimed"
+    | "table_updated"
+    | "table_reset"
     | "bill_paid"
     | "review_submitted"
     | "connected"
