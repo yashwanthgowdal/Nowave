@@ -77,7 +77,8 @@ export interface OrderItemRecord {
 export interface Order {
   id: string;
   orderNumber: string; // e.g. "#214"
-  tableNumber: string; // e.g. "5"
+  tableNumber: string; // e.g. "5", "Patio-2", "VIP"
+  tableLabel?: string; // e.g. "Table 5", "Patio 2", "VIP Lounge"
   items: OrderItemRecord[];
   totalAmount: number;
   status: OrderStatus;
@@ -109,6 +110,8 @@ export interface Waiter {
 
 export interface TableSession {
   tableNumber: string;
+  tableLabel?: string;
+  qrToken?: string;
   status: TableStatus;
   currentOrderId?: string;
   assignedWaiterId?: string;

@@ -110,7 +110,7 @@ export function TableOrderVerificationModal({
             <div className="flex items-center justify-between">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber/15 border border-amber/30 text-amber font-mono text-xs font-bold">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Table {tableNumber.length === 1 ? `0${tableNumber}` : tableNumber} Verification
+                {tableSession?.tableLabel || `Table ${tableNumber}`} Verification
               </div>
               <div className="text-[11px] text-zinc-400 font-mono">
                 Anti-Fake Order Gate
@@ -124,7 +124,7 @@ export function TableOrderVerificationModal({
               </h3>
               <p className="text-xs text-zinc-300 leading-relaxed max-w-xs mx-auto">
                 To guarantee genuine in-seat dining, a waiter is walking to{" "}
-                <span className="text-amber font-bold">Table {tableNumber}</span> with your 4-digit confirmation code.
+                <span className="text-amber font-bold">{tableSession?.tableLabel || `Table ${tableNumber}`}</span> with your 4-digit confirmation code.
               </p>
             </div>
 

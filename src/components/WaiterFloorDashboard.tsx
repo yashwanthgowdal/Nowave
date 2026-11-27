@@ -331,7 +331,7 @@ export function WaiterFloorDashboard() {
                     {/* Header */}
                     <div className="flex items-center justify-between">
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber/20 border border-amber/40 text-amber font-mono font-bold text-sm">
-                        Table {table.tableNumber.length === 1 ? `0${table.tableNumber}` : table.tableNumber}
+                        {table.tableLabel || `Table ${table.tableNumber}`}
                       </div>
                       <div className="text-xs text-zinc-400 font-mono">
                         {activeOrder ? `₹${activeOrder.totalAmount}` : "New Order"}
@@ -353,14 +353,14 @@ export function WaiterFloorDashboard() {
                       <div className="space-y-3 pt-2 border-t border-amber/20">
                         <div className="text-center space-y-1">
                           <div className="text-[11px] uppercase tracking-wider text-amber font-semibold">
-                            Table {table.tableNumber} 4-Digit Verification Code
+                            {table.tableLabel || `Table ${table.tableNumber}`} 4-Digit Verification Code
                           </div>
                           {/* Glowing 4-Digit Display */}
                           <div className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-black/80 border-2 border-amber shadow-lg shadow-amber/30 text-amber font-mono text-3xl font-extrabold tracking-[0.25em]">
                             {table.verificationOtp || "4829"}
                           </div>
                           <p className="text-[11px] text-zinc-400">
-                            Walk to Table {table.tableNumber}. Confirm guests are seated and give them this code.
+                            Walk to {table.tableLabel || `Table ${table.tableNumber}`}. Confirm guests are seated and give them this code.
                           </p>
                         </div>
 
@@ -391,7 +391,7 @@ export function WaiterFloorDashboard() {
                         className="w-full py-3.5 rounded-2xl bg-amber hover:bg-amber-400 text-obsidian font-extrabold text-sm active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber/20"
                       >
                         <UserCheck className="w-4 h-4" />
-                        Claim Table {table.tableNumber} & Get Code
+                        Claim {table.tableLabel || `Table ${table.tableNumber}`} & Get Code
                       </button>
                     )}
                   </div>
@@ -497,10 +497,10 @@ export function WaiterFloorDashboard() {
           )}
         </section>
 
-        {/* ─── 3. OVERALL FLOOR STATUS (T1 - T8) ─── */}
+        {/* ─── 3. OVERALL FLOOR STATUS ─── */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-serif font-bold text-[#FAF7F2]">All Dining Tables (T1 – T8)</h2>
+            <h2 className="text-lg font-serif font-bold text-[#FAF7F2]">All Dining Tables ({tables.length})</h2>
             <span className="text-xs text-zinc-400">Café Floor Overview</span>
           </div>
 
@@ -511,7 +511,9 @@ export function WaiterFloorDashboard() {
                 className="p-3.5 rounded-2xl bg-[#181615] border border-white/5 space-y-2 text-center"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-xs text-zinc-300">T{t.tableNumber}</span>
+                  <span className="font-mono font-bold text-xs text-zinc-300">
+                    {t.tableLabel || `T${t.tableNumber}`}
+                  </span>
                   <span
                     className={`w-2 h-2 rounded-full ${
                       t.status === "available"

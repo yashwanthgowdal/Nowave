@@ -33,6 +33,9 @@ export function useRestaurantStore(tableNumber?: string | null) {
     activeTableOrder,
     currentTableSession,
     // Actions
+    createTable: RestaurantStore.createTable.bind(RestaurantStore),
+    deleteTable: RestaurantStore.deleteTable.bind(RestaurantStore),
+    resolveTable: RestaurantStore.resolveTable.bind(RestaurantStore),
     pingBrowsing: RestaurantStore.pingBrowsing.bind(RestaurantStore),
     createOrder: RestaurantStore.createOrder.bind(RestaurantStore),
     claimTable: RestaurantStore.claimTable.bind(RestaurantStore),

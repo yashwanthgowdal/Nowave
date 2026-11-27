@@ -35,7 +35,7 @@ export function StaffFloorMap() {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <h2 className="text-lg font-serif font-black tracking-wider text-white uppercase">
-              Dining Room Floor Grid (T1 – T8)
+              Dining Room Floor Grid ({tables.length} Tables)
             </h2>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
@@ -104,7 +104,7 @@ export function StaffFloorMap() {
                     </span>
                     <div>
                       <div className="text-xs font-bold text-white">
-                        Table {table.tableNumber.length === 1 ? `0${table.tableNumber}` : table.tableNumber}
+                        {table.tableLabel || `Table ${table.tableNumber}`}
                       </div>
                       <div className="text-[10px] text-zinc-400">
                         {table.guestCount || 2} Diners

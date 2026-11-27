@@ -5,6 +5,7 @@ import { AdminLogin } from "@/components/AdminLogin";
 import { AdminQRPage } from "@/components/AdminQRPage";
 import { StandaloneKDSPage } from "@/components/StandaloneKDSPage";
 import { WaiterFloorDashboard } from "@/components/WaiterFloorDashboard";
+import { HealthCheckPage } from "@/components/HealthCheckPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export function App() {
@@ -65,6 +66,10 @@ export function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* Diagnostic API Health Check Endpoint */}
+      <Route path="/api/health" element={<HealthCheckPage />} />
+      <Route path="/health" element={<HealthCheckPage />} />
 
       {/* Catch-all redirect */}
       <Route

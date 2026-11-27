@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════
 -- NoWave Smart Dining Ecosystem — Supabase PostgreSQL Schema
--- Realtime WebSocket Sync, Waiter Claim & Table OTP System
+-- Realtime WebSocket Sync, Dynamic Tables & 4-Digit Table OTP
 -- ═══════════════════════════════════════════════════════════
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -31,11 +31,13 @@ ON CONFLICT (id) DO UPDATE SET
   is_active = EXCLUDED.is_active;
 
 -- ───────────────────────────────────────────────────────────
--- 2. RESTAURANT TABLES (LIFECYCLE STATE MACHINE)
+-- 2. DYNAMIC RESTAURANT TABLES (ANY CUSTOM LABEL / NUMBER)
 -- ───────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS restaurant_tables (
-  table_number         TEXT PRIMARY KEY,
+  table_number         TEXT PRIMARY KEY, -- e.g. '1', '14', 'Patio-2', 'VIP'
+  table_label          TEXT NOT NULL DEFAULT '', -- e.g. 'Table 1', 'Patio 2', 'VIP Lounge'
+  qr_token             TEXT UNIQUE, -- Unique unguessable QR token
   status               TEXT NOT NULL DEFAULT 'available'
                        CHECK (status IN ('available', 'browsing', 'awaiting_verification', 'ordered', 'cooking', 'eating', 'paid')),
   assigned_waiter_id   TEXT REFERENCES waiters(id) ON DELETE SET NULL,
@@ -46,21 +48,30 @@ CREATE TABLE IF NOT EXISTS restaurant_tables (
   session_token        TEXT,
   guest_count          INT NOT NULL DEFAULT 2,
   total_spent          DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_active          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Seed Tables T1 through T8
-INSERT INTO restaurant_tables (table_number, status, verification_otp, guest_count, total_spent)
+-- Seed Initial Tables (Indoor, Outdoor & VIP)
+INSERT INTO restaurant_tables (table_number, table_label, qr_token, status, verification_otp, guest_count, total_spent)
 VALUES
-  ('1', 'available', '4821', 2, 0),
-  ('2', 'available', '7392', 4, 0),
-  ('3', 'available', '5129', 2, 0),
-  ('4', 'available', '8301', 4, 0),
-  ('5', 'available', '2948', 2, 0),
-  ('6', 'available', '6173', 4, 0),
-  ('7', 'available', '3502', 6, 0),
-  ('8', 'available', '9416', 4, 0)
-ON CONFLICT (table_number) DO NOTHING;
+  ('1', 'Table 01', 'qr_tbl_01', 'available', '4821', 2, 0),
+  ('2', 'Table 02', 'qr_tbl_02', 'available', '7392', 4, 0),
+  ('3', 'Table 03', 'qr_tbl_03', 'available', '5129', 2, 0),
+  ('4', 'Table 04', 'qr_tbl_04', 'available', '8301', 4, 0),
+  ('5', 'Table 05', 'qr_tbl_05', 'available', '2948', 2, 0),
+  ('6', 'Table 06', 'qr_tbl_06', 'available', '6173', 4, 0),
+  ('7', 'Table 07', 'qr_tbl_07', 'available', '3502', 6, 0),
+  ('8', 'Table 08', 'qr_tbl_08', 'available', '9416', 4, 0),
+  ('9', 'Table 09', 'qr_tbl_09', 'available', '1824', 4, 0),
+  ('10', 'Table 10', 'qr_tbl_10', 'available', '7645', 2, 0),
+  ('12', 'Table 12', 'qr_tbl_12', 'available', '3912', 4, 0),
+  ('14', 'Table 14', 'qr_tbl_14', 'available', '6489', 6, 0),
+  ('Patio-1', 'Patio 1', 'qr_patio_01', 'available', '5281', 4, 0),
+  ('Patio-2', 'Patio 2', 'qr_patio_02', 'available', '9134', 4, 0),
+  ('VIP', 'VIP Lounge', 'qr_vip_lounge', 'available', '8820', 8, 0)
+ON CONFLICT (table_number) DO UPDATE SET
+  table_label = EXCLUDED.table_label;
 
 -- ───────────────────────────────────────────────────────────
 -- 3. CORE MENU & CATEGORIES
@@ -76,7 +87,7 @@ CREATE TABLE IF NOT EXISTS categories (
 );
 
 CREATE TABLE IF NOT EXISTS menu_items (
-  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                TEXT PRIMARY KEY,
   name              TEXT NOT NULL,
   description       TEXT NOT NULL DEFAULT '',
   price             DECIMAL(10, 2) NOT NULL,
@@ -105,7 +116,8 @@ CREATE TABLE IF NOT EXISTS menu_items (
 CREATE TABLE IF NOT EXISTS orders (
   id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_number         TEXT NOT NULL UNIQUE,
-  table_number         TEXT NOT NULL REFERENCES restaurant_tables(table_number) ON DELETE CASCADE,
+  table_number         TEXT NOT NULL,
+  table_label          TEXT NOT NULL DEFAULT '',
   total_amount         DECIMAL(10, 2) NOT NULL,
   status               TEXT NOT NULL DEFAULT 'awaiting_verification'
                        CHECK (status IN ('awaiting_verification', 'confirmed', 'cooking', 'ready', 'served', 'completed', 'cancelled')),
@@ -155,16 +167,8 @@ CREATE TABLE IF NOT EXISTS customer_reviews (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS admin_users (
-  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email         TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  name          TEXT NOT NULL,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 -- ───────────────────────────────────────────────────────────
--- 6. ROW-LEVEL SECURITY (RLS) POLICIES
+-- 6. ROW-LEVEL SECURITY (RLS) POLICIES — NO SILENT FAILS
 -- ───────────────────────────────────────────────────────────
 
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
@@ -176,19 +180,20 @@ ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_reviews ENABLE ROW LEVEL SECURITY;
 
--- Public / Anon: Read menu, tables, and submit orders/payments
+-- Dynamic Public / Anon: Read menu & tables, insert/upsert new tables & orders freely
 CREATE POLICY "Public read categories" ON categories FOR SELECT TO anon USING (true);
 CREATE POLICY "Public read menu_items" ON menu_items FOR SELECT TO anon USING (true);
 CREATE POLICY "Public read waiters" ON waiters FOR SELECT TO anon USING (true);
-CREATE POLICY "Public read restaurant_tables" ON restaurant_tables FOR SELECT TO anon USING (true);
-CREATE POLICY "Public update browsing tables" ON restaurant_tables FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Public all restaurant_tables" ON restaurant_tables FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Public insert orders" ON orders FOR INSERT TO anon WITH CHECK (total_amount > 0);
-CREATE POLICY "Public insert order_items" ON order_items FOR INSERT TO anon WITH CHECK (quantity > 0);
 CREATE POLICY "Public read own orders" ON orders FOR SELECT TO anon USING (true);
+CREATE POLICY "Public update orders" ON orders FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Public insert order_items" ON order_items FOR INSERT TO anon WITH CHECK (quantity > 0);
+CREATE POLICY "Public read order_items" ON order_items FOR SELECT TO anon USING (true);
 CREATE POLICY "Public insert payments" ON payments FOR INSERT TO anon WITH CHECK (total_paid > 0);
 CREATE POLICY "Public insert reviews" ON customer_reviews FOR INSERT TO anon WITH CHECK (rating >= 1);
 
--- Staff / Authenticated: Full Management Access
+-- Staff / Authenticated: Full Unrestricted Management Access
 CREATE POLICY "Staff full categories" ON categories FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Staff full menu_items" ON menu_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Staff full waiters" ON waiters FOR ALL TO authenticated USING (true) WITH CHECK (true);
@@ -199,7 +204,7 @@ CREATE POLICY "Staff full payments" ON payments FOR ALL TO authenticated USING (
 CREATE POLICY "Staff full reviews" ON customer_reviews FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ───────────────────────────────────────────────────────────
--- 7. REALTIME PUBLICATION SETUP
+-- 7. REALTIME REPLICATION PUBLICATION
 -- ───────────────────────────────────────────────────────────
 
 ALTER PUBLICATION supabase_realtime ADD TABLE restaurant_tables;

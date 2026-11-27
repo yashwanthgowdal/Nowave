@@ -15,10 +15,10 @@ import { playOrderChime, playSuccessChime } from "./audioService";
 import { verifyTableToken } from "./tableSession";
 import { supabase, isSupabaseConfigured } from "./supabase";
 
-const ORDERS_STORAGE_KEY = "nowave_orders_store_v3";
-const TABLES_STORAGE_KEY = "nowave_tables_store_v3";
-const PAYMENTS_STORAGE_KEY = "nowave_payments_store_v3";
-const REVIEWS_STORAGE_KEY = "nowave_reviews_store_v3";
+const ORDERS_STORAGE_KEY = "nowave_orders_store_v4";
+const TABLES_STORAGE_KEY = "nowave_tables_store_v4";
+const PAYMENTS_STORAGE_KEY = "nowave_payments_store_v4";
+const REVIEWS_STORAGE_KEY = "nowave_reviews_store_v4";
 const RESTAURANT_BUS_CHANNEL = "nowave_restaurant_realtime_bus";
 
 export const DEFAULT_WAITERS: Waiter[] = [
@@ -32,16 +32,23 @@ function generateOtp(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-// 8 Floor Tables for NoWave Smart Dining
+// Initial Standard Tables for NoWave Smart Dining
 const INITIAL_TABLES: TableSession[] = [
-  { tableNumber: "1", status: "available", verificationOtp: "4821", otpAttempts: 0, guestCount: 2, totalSpent: 0, lastActiveAt: Date.now() },
-  { tableNumber: "2", status: "available", verificationOtp: "7392", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
-  { tableNumber: "3", status: "available", verificationOtp: "5129", otpAttempts: 0, guestCount: 2, totalSpent: 0, lastActiveAt: Date.now() },
-  { tableNumber: "4", status: "available", verificationOtp: "8301", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
-  { tableNumber: "5", status: "available", verificationOtp: "2948", otpAttempts: 0, guestCount: 2, totalSpent: 0, lastActiveAt: Date.now() },
-  { tableNumber: "6", status: "available", verificationOtp: "6173", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
-  { tableNumber: "7", status: "available", verificationOtp: "3502", otpAttempts: 0, guestCount: 6, totalSpent: 0, lastActiveAt: Date.now() },
-  { tableNumber: "8", status: "available", verificationOtp: "9416", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "1", tableLabel: "Table 01", qrToken: "qr_tbl_01", status: "available", verificationOtp: "4821", otpAttempts: 0, guestCount: 2, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "2", tableLabel: "Table 02", qrToken: "qr_tbl_02", status: "available", verificationOtp: "7392", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "3", tableLabel: "Table 03", qrToken: "qr_tbl_03", status: "available", verificationOtp: "5129", otpAttempts: 0, guestCount: 2, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "4", tableLabel: "Table 04", qrToken: "qr_tbl_04", status: "available", verificationOtp: "8301", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "5", tableLabel: "Table 05", qrToken: "qr_tbl_05", status: "available", verificationOtp: "2948", otpAttempts: 0, guestCount: 2, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "6", tableLabel: "Table 06", qrToken: "qr_tbl_06", status: "available", verificationOtp: "6173", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "7", tableLabel: "Table 07", qrToken: "qr_tbl_07", status: "available", verificationOtp: "3502", otpAttempts: 0, guestCount: 6, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "8", tableLabel: "Table 08", qrToken: "qr_tbl_08", status: "available", verificationOtp: "9416", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "9", tableLabel: "Table 09", qrToken: "qr_tbl_09", status: "available", verificationOtp: "1824", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "10", tableLabel: "Table 10", qrToken: "qr_tbl_10", status: "available", verificationOtp: "7645", otpAttempts: 0, guestCount: 2, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "12", tableLabel: "Table 12", qrToken: "qr_tbl_12", status: "available", verificationOtp: "3912", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "14", tableLabel: "Table 14", qrToken: "qr_tbl_14", status: "available", verificationOtp: "6489", otpAttempts: 0, guestCount: 6, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "Patio-1", tableLabel: "Patio 1", qrToken: "qr_patio_01", status: "available", verificationOtp: "5281", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "Patio-2", tableLabel: "Patio 2", qrToken: "qr_patio_02", status: "available", verificationOtp: "9134", otpAttempts: 0, guestCount: 4, totalSpent: 0, lastActiveAt: Date.now() },
+  { tableNumber: "VIP", tableLabel: "VIP Lounge", qrToken: "qr_vip_lounge", status: "available", verificationOtp: "8820", otpAttempts: 0, guestCount: 8, totalSpent: 0, lastActiveAt: Date.now() },
 ];
 
 class RestaurantOperationsStore {
@@ -119,12 +126,12 @@ class RestaurantOperationsStore {
     }
   }
 
-  // Automatic 3-second SWR/Polling Fallback for restrictive café Wi-Fi
+  // Automatic 2.5-second SWR/Polling Fallback for restrictive café Wi-Fi
   private startPollingFallback() {
     if (typeof window === "undefined") return;
     this.pollingTimer = setInterval(() => {
       this.syncFromCloudOrStorage();
-    }, 3000);
+    }, 2500);
   }
 
   private async syncFromCloudOrStorage() {
@@ -136,6 +143,8 @@ class RestaurantOperationsStore {
             const idx = this.tables.findIndex((t) => t.tableNumber === row.table_number);
             const session: TableSession = {
               tableNumber: row.table_number,
+              tableLabel: row.table_label || `Table ${row.table_number}`,
+              qrToken: row.qr_token || undefined,
               status: row.status as TableStatus,
               assignedWaiterId: row.assigned_waiter_id || undefined,
               assignedWaiterName: row.assigned_waiter_name || undefined,
@@ -155,6 +164,27 @@ class RestaurantOperationsStore {
           this.persist();
           this.notify();
         }
+
+        const { data: dbOrders } = await supabase
+          .from("orders")
+          .select("*")
+          .neq("status", "completed");
+
+        if (dbOrders && dbOrders.length > 0) {
+          dbOrders.forEach((row: any) => {
+            const idx = this.orders.findIndex((o) => o.id === row.id);
+            if (idx >= 0) {
+              this.orders[idx] = {
+                ...this.orders[idx],
+                status: row.status as OrderStatus,
+                assignedWaiterId: row.assigned_waiter_id || undefined,
+                assignedWaiterName: row.assigned_waiter_name || undefined,
+              };
+            }
+          });
+          this.persist();
+          this.notify();
+        }
       } catch (err) {
         // Silently continue with local store
       }
@@ -169,6 +199,8 @@ class RestaurantOperationsStore {
     const idx = this.tables.findIndex((t) => t.tableNumber === row.table_number);
     const updated: TableSession = {
       tableNumber: row.table_number,
+      tableLabel: row.table_label || `Table ${row.table_number}`,
+      qrToken: row.qr_token || undefined,
       status: row.status as TableStatus,
       assignedWaiterId: row.assigned_waiter_id || undefined,
       assignedWaiterName: row.assigned_waiter_name || undefined,
@@ -278,14 +310,111 @@ class RestaurantOperationsStore {
     this.listeners.forEach((l) => l());
   }
 
-  // ─── TABLE LIFECYCLE & HEARTBEAT ───
+  // ─── DYNAMIC TABLE CRUD & MANAGEMENT ───
+
+  public async createTable(params: {
+    tableNumber: string;
+    tableLabel?: string;
+    guestCount?: number;
+  }): Promise<TableSession> {
+    const cleanNumber = params.tableNumber.trim();
+    const cleanLabel =
+      params.tableLabel?.trim() ||
+      (isNaN(Number(cleanNumber)) ? cleanNumber : `Table ${cleanNumber.padStart(2, "0")}`);
+    const qrToken = `qr_${cleanNumber.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+    const otp = generateOtp();
+
+    const newTable: TableSession = {
+      tableNumber: cleanNumber,
+      tableLabel: cleanLabel,
+      qrToken,
+      status: "available",
+      verificationOtp: otp,
+      otpAttempts: 0,
+      guestCount: params.guestCount || 4,
+      totalSpent: 0,
+      lastActiveAt: Date.now(),
+    };
+
+    const existingIdx = this.tables.findIndex(
+      (t) => t.tableNumber.toLowerCase() === cleanNumber.toLowerCase()
+    );
+    if (existingIdx >= 0) {
+      this.tables[existingIdx] = { ...this.tables[existingIdx], ...newTable };
+    } else {
+      this.tables.push(newTable);
+    }
+
+    this.persist();
+    this.broadcast("table_updated", { table: newTable });
+    this.notify();
+
+    if (supabase && isSupabaseConfigured) {
+      try {
+        await supabase.from("restaurant_tables").upsert({
+          table_number: newTable.tableNumber,
+          table_label: newTable.tableLabel,
+          qr_token: newTable.qrToken,
+          status: newTable.status,
+          verification_otp: newTable.verificationOtp,
+          guest_count: newTable.guestCount,
+          last_active: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.warn("Supabase upsert table error:", err);
+      }
+    }
+
+    return newTable;
+  }
+
+  public async deleteTable(tableNumber: string): Promise<void> {
+    this.tables = this.tables.filter((t) => t.tableNumber !== tableNumber);
+    this.persist();
+    this.broadcast("table_reset", { tableNumber });
+    this.notify();
+
+    if (supabase && isSupabaseConfigured) {
+      try {
+        await supabase.from("restaurant_tables").delete().eq("table_number", tableNumber);
+      } catch (err) {
+        console.warn("Supabase delete table error:", err);
+      }
+    }
+  }
+
+  /** Resolves table by either tableNumber, tableLabel, or qrToken */
+  public resolveTable(identifier: string): TableSession {
+    const clean = identifier.trim();
+    let match = this.tables.find(
+      (t) =>
+        t.tableNumber.toLowerCase() === clean.toLowerCase() ||
+        t.qrToken?.toLowerCase() === clean.toLowerCase() ||
+        t.tableLabel?.toLowerCase() === clean.toLowerCase()
+    );
+
+    if (match) return match;
+    return this.pingBrowsing(clean);
+  }
 
   /** Triggered the moment a customer opens /table/:tableId */
-  public pingBrowsing(tableNumber: string): TableSession {
-    let table = this.tables.find((t) => t.tableNumber === tableNumber);
+  public pingBrowsing(identifier: string): TableSession {
+    const clean = identifier.trim();
+    let table = this.tables.find(
+      (t) =>
+        t.tableNumber.toLowerCase() === clean.toLowerCase() ||
+        t.qrToken?.toLowerCase() === clean.toLowerCase() ||
+        t.tableLabel?.toLowerCase() === clean.toLowerCase()
+    );
+
     if (!table) {
+      const tableNumber = clean;
+      const tableLabel = isNaN(Number(tableNumber)) ? tableNumber : `Table ${tableNumber.padStart(2, "0")}`;
+      const qrToken = `qr_${tableNumber.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
       table = {
         tableNumber,
+        tableLabel,
+        qrToken,
         status: "browsing",
         verificationOtp: generateOtp(),
         otpAttempts: 0,
@@ -314,6 +443,8 @@ class RestaurantOperationsStore {
         .from("restaurant_tables")
         .upsert({
           table_number: table.tableNumber,
+          table_label: table.tableLabel,
+          qr_token: table.qrToken,
           status: table.status,
           verification_otp: table.verificationOtp,
           last_active: new Date().toISOString(),
@@ -325,9 +456,7 @@ class RestaurantOperationsStore {
   }
 
   public getTableSession(tableNumber: string): TableSession {
-    const table = this.tables.find((t) => t.tableNumber === tableNumber);
-    if (table) return table;
-    return this.pingBrowsing(tableNumber);
+    return this.resolveTable(tableNumber);
   }
 
   public getAllTables(): TableSession[] {
@@ -343,6 +472,7 @@ class RestaurantOperationsStore {
   /** Step A: Customer places order -> Status is 'awaiting_verification' */
   public createOrder(params: {
     tableNumber: string;
+    tableLabel?: string;
     items: ShortlistItem[];
     totalAmount: number;
     estimatedMinutes?: number;
@@ -355,7 +485,7 @@ class RestaurantOperationsStore {
       }
     }
 
-    const table = this.getTableSession(params.tableNumber);
+    const table = this.resolveTable(params.tableNumber);
     const otp = table.verificationOtp || generateOtp();
     table.verificationOtp = otp;
     table.status = "awaiting_verification";
@@ -383,7 +513,8 @@ class RestaurantOperationsStore {
     const newOrder: Order = {
       id: `ord-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       orderNumber: orderNum,
-      tableNumber: params.tableNumber,
+      tableNumber: table.tableNumber,
+      tableLabel: table.tableLabel || params.tableLabel || `Table ${table.tableNumber}`,
       items: orderItems,
       totalAmount: params.totalAmount,
       status: "awaiting_verification", // Awaiting 4-digit Waiter OTP!
@@ -411,6 +542,7 @@ class RestaurantOperationsStore {
           id: newOrder.id,
           order_number: newOrder.orderNumber,
           table_number: newOrder.tableNumber,
+          table_label: newOrder.tableLabel,
           total_amount: newOrder.totalAmount,
           status: newOrder.status,
           verification_otp: newOrder.verificationOtp,
@@ -428,7 +560,7 @@ class RestaurantOperationsStore {
           current_order_id: newOrder.id,
           last_active: new Date().toISOString(),
         })
-        .eq("table_number", params.tableNumber)
+        .eq("table_number", table.tableNumber)
         .then();
     }
 
@@ -441,7 +573,9 @@ class RestaurantOperationsStore {
     waiterId: string,
     waiterName: string
   ): { success: boolean; message: string } {
-    const table = this.tables.find((t) => t.tableNumber === tableNumber);
+    const table = this.tables.find(
+      (t) => t.tableNumber.toLowerCase() === tableNumber.toLowerCase()
+    );
     if (!table) {
       return { success: false, message: "Table not found." };
     }
@@ -459,7 +593,9 @@ class RestaurantOperationsStore {
 
     // Update active order assigned waiter
     const activeOrder = this.orders.find(
-      (o) => o.tableNumber === tableNumber && o.status === "awaiting_verification"
+      (o) =>
+        o.tableNumber.toLowerCase() === tableNumber.toLowerCase() &&
+        o.status === "awaiting_verification"
     );
     if (activeOrder) {
       activeOrder.assignedWaiterId = waiterId;
@@ -467,7 +603,7 @@ class RestaurantOperationsStore {
     }
 
     this.persist();
-    this.broadcast("table_claimed", { tableNumber, waiterId, waiterName });
+    this.broadcast("table_claimed", { tableNumber: table.tableNumber, waiterId, waiterName });
     this.notify();
 
     if (supabase && isSupabaseConfigured) {
@@ -477,7 +613,7 @@ class RestaurantOperationsStore {
           assigned_waiter_id: waiterId,
           assigned_waiter_name: waiterName,
         })
-        .eq("table_number", tableNumber)
+        .eq("table_number", table.tableNumber)
         .then();
 
       if (activeOrder) {
@@ -492,7 +628,10 @@ class RestaurantOperationsStore {
       }
     }
 
-    return { success: true, message: `Table ${tableNumber} locked to ${waiterName}.` };
+    return {
+      success: true,
+      message: `${table.tableLabel || `Table ${table.tableNumber}`} locked to ${waiterName}.`,
+    };
   }
 
   /** Transfer Table to another staff member */
@@ -501,14 +640,19 @@ class RestaurantOperationsStore {
     newWaiterId: string,
     newWaiterName: string
   ) {
-    const table = this.tables.find((t) => t.tableNumber === tableNumber);
+    const table = this.tables.find(
+      (t) => t.tableNumber.toLowerCase() === tableNumber.toLowerCase()
+    );
     if (table) {
       table.assignedWaiterId = newWaiterId;
       table.assignedWaiterName = newWaiterName;
     }
 
     this.orders.forEach((o) => {
-      if (o.tableNumber === tableNumber && o.status !== "completed") {
+      if (
+        o.tableNumber.toLowerCase() === tableNumber.toLowerCase() &&
+        o.status !== "completed"
+      ) {
         o.assignedWaiterId = newWaiterId;
         o.assignedWaiterName = newWaiterName;
       }
@@ -535,7 +679,9 @@ class RestaurantOperationsStore {
     tableNumber: string,
     inputOtp: string
   ): { success: boolean; message: string; remainingAttempts?: number } {
-    const table = this.tables.find((t) => t.tableNumber === tableNumber);
+    const table = this.tables.find(
+      (t) => t.tableNumber.toLowerCase() === tableNumber.toLowerCase()
+    );
     if (!table) return { success: false, message: "Table session expired." };
 
     // Rate-limiting: Max 5 wrong attempts per session
@@ -565,7 +711,9 @@ class RestaurantOperationsStore {
     table.status = "ordered";
 
     const activeOrder = this.orders.find(
-      (o) => o.tableNumber === tableNumber && o.status === "awaiting_verification"
+      (o) =>
+        o.tableNumber.toLowerCase() === tableNumber.toLowerCase() &&
+        o.status === "awaiting_verification"
     );
     if (activeOrder) {
       activeOrder.status = "confirmed";
@@ -573,7 +721,7 @@ class RestaurantOperationsStore {
 
     this.persist();
     playSuccessChime();
-    this.broadcast("order_verified", { tableNumber, orderId: activeOrder?.id });
+    this.broadcast("order_verified", { tableNumber: table.tableNumber, orderId: activeOrder?.id });
     this.notify();
 
     if (supabase && isSupabaseConfigured) {
@@ -583,7 +731,7 @@ class RestaurantOperationsStore {
           status: "ordered",
           otp_attempts: 0,
         })
-        .eq("table_number", tableNumber)
+        .eq("table_number", table.tableNumber)
         .then();
 
       if (activeOrder) {
@@ -600,14 +748,18 @@ class RestaurantOperationsStore {
 
   /** Waiter Direct Physical Override Verification */
   public waiterDirectVerify(tableNumber: string, waiterId: string) {
-    const table = this.tables.find((t) => t.tableNumber === tableNumber);
+    const table = this.tables.find(
+      (t) => t.tableNumber.toLowerCase() === tableNumber.toLowerCase()
+    );
     if (!table) return;
 
     table.status = "ordered";
     table.otpAttempts = 0;
 
     const activeOrder = this.orders.find(
-      (o) => o.tableNumber === tableNumber && o.status === "awaiting_verification"
+      (o) =>
+        o.tableNumber.toLowerCase() === tableNumber.toLowerCase() &&
+        o.status === "awaiting_verification"
     );
     if (activeOrder) {
       activeOrder.status = "confirmed";
@@ -616,14 +768,14 @@ class RestaurantOperationsStore {
 
     this.persist();
     playSuccessChime();
-    this.broadcast("order_verified", { tableNumber, orderId: activeOrder?.id, waiterId });
+    this.broadcast("order_verified", { tableNumber: table.tableNumber, orderId: activeOrder?.id, waiterId });
     this.notify();
 
     if (supabase && isSupabaseConfigured) {
       supabase
         .from("restaurant_tables")
         .update({ status: "ordered", otp_attempts: 0 })
-        .eq("table_number", tableNumber)
+        .eq("table_number", table.tableNumber)
         .then();
 
       if (activeOrder) {
@@ -636,21 +788,23 @@ class RestaurantOperationsStore {
     }
   }
 
-  /** 1-Click Reset Table (Available on Manager & Waiter Dashboards) */
+  /** 1-Click Reset Table */
   public resetTable(tableNumber: string) {
-    const tableIndex = this.tables.findIndex((t) => t.tableNumber === tableNumber);
+    const tableIndex = this.tables.findIndex(
+      (t) => t.tableNumber.toLowerCase() === tableNumber.toLowerCase()
+    );
     const freshOtp = generateOtp();
 
     if (tableIndex >= 0) {
+      const prev = this.tables[tableIndex];
       this.tables[tableIndex] = {
-        tableNumber,
+        ...prev,
         status: "available",
         verificationOtp: freshOtp,
         otpAttempts: 0,
         assignedWaiterId: undefined,
         assignedWaiterName: undefined,
         currentOrderId: undefined,
-        guestCount: 2,
         totalSpent: 0,
         lastActiveAt: Date.now(),
       };
@@ -658,7 +812,10 @@ class RestaurantOperationsStore {
 
     // Complete any hanging orders
     this.orders.forEach((o) => {
-      if (o.tableNumber === tableNumber && o.status !== "completed") {
+      if (
+        o.tableNumber.toLowerCase() === tableNumber.toLowerCase() &&
+        o.status !== "completed"
+      ) {
         o.status = "completed";
       }
     });
@@ -734,7 +891,9 @@ class RestaurantOperationsStore {
   }
 
   public updateTableStatus(tableNumber: string, status: TableStatus) {
-    const table = this.tables.find((t) => t.tableNumber === tableNumber);
+    const table = this.tables.find(
+      (t) => t.tableNumber.toLowerCase() === tableNumber.toLowerCase()
+    );
     if (table) {
       table.status = status;
       table.lastActiveAt = Date.now();
@@ -745,7 +904,7 @@ class RestaurantOperationsStore {
         supabase
           .from("restaurant_tables")
           .update({ status, last_active: new Date().toISOString() })
-          .eq("table_number", tableNumber)
+          .eq("table_number", table.tableNumber)
           .then();
       }
     }
@@ -753,7 +912,10 @@ class RestaurantOperationsStore {
 
   public getActiveOrderByTable(tableNumber: string): Order | undefined {
     return this.orders.find(
-      (o) => o.tableNumber === tableNumber && o.status !== "completed" && o.status !== "cancelled"
+      (o) =>
+        o.tableNumber.toLowerCase() === tableNumber.toLowerCase() &&
+        o.status !== "completed" &&
+        o.status !== "cancelled"
     );
   }
 
@@ -781,7 +943,9 @@ class RestaurantOperationsStore {
     this.payments.unshift(payment);
     this.updateOrderStatus(params.orderId, "completed");
 
-    const table = this.tables.find((t) => t.tableNumber === params.tableNumber);
+    const table = this.tables.find(
+      (t) => t.tableNumber.toLowerCase() === params.tableNumber.toLowerCase()
+    );
     if (table) {
       table.totalSpent = (table.totalSpent || 0) + params.totalPaid;
       table.status = "paid";
@@ -835,7 +999,7 @@ class RestaurantOperationsStore {
 
   public getLiveMetrics() {
     const activeTables = this.tables.filter((t) => t.status !== "available").length;
-    const totalTables = this.tables.length || 8;
+    const totalTables = this.tables.length || 15;
 
     const baseSales = 46700;
     const dynamicSales = this.payments.reduce((sum, p) => sum + p.totalPaid, 0);

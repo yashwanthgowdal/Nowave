@@ -35,8 +35,9 @@ import { MenuService } from "@/lib/MenuService";
 import { MenuItem, Category } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 import { QRGenerator } from "@/components/QRGenerator";
-import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { isSupabaseConfigured, checkSupabaseHealth, SupabaseHealthResult } from "@/lib/supabase";
 import { ExecutiveDashboardView } from "@/components/ExecutiveDashboardView";
 import { KitchenDisplaySystem } from "@/components/KitchenDisplaySystem";
 import { StaffFloorMap } from "@/components/StaffFloorMap";
@@ -53,7 +54,20 @@ export function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showOnlyOutOfStock, setShowOnlyOutOfStock] = useState(false);
-  const [showFirebaseBanner, setShowFirebaseBanner] = useState(!isFirebaseConfigured);
+  const [showFirebaseBanner, setShowFirebaseBanner] = useState(!isSupabaseConfigured);
+
+  // Health Audit Modal state
+  const [isHealthModalOpen, setIsHealthModalOpen] = useState(false);
+  const [healthResult, setHealthResult] = useState<SupabaseHealthResult | null>(null);
+  const [isAuditing, setIsAuditing] = useState(false);
+
+  const handleOpenAudit = async () => {
+    setIsHealthModalOpen(true);
+    setIsAuditing(true);
+    const res = await checkSupabaseHealth();
+    setHealthResult(res);
+    setIsAuditing(false);
+  };
 
   // Modals & Dialogs state
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -221,14 +235,27 @@ export function AdminDashboard() {
                 <span className="text-[10px] bg-amber/20 border border-amber/40 text-amber font-mono font-bold px-2 py-0.5 rounded-md">
                   MANAGER ADMIN
                 </span>
-                {isFirebaseConfigured ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-md">
-                    <Cloud className="w-3 h-3" /> Firestore Realtime
-                  </span>
+                {isSupabaseConfigured ? (
+                  <button
+                    type="button"
+                    onClick={handleOpenAudit}
+                    className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-md hover:bg-emerald-900/40 transition-all cursor-pointer"
+                    title="Click to run live Supabase connection audit"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>⚡ Supabase Realtime</span>
+                    <span className="text-[9px] text-emerald-300 underline font-normal">Audit</span>
+                  </button>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-amber/80 bg-amber/10 border border-amber/30 px-2 py-0.5 rounded-md">
-                    <CloudOff className="w-3 h-3" /> Local Fallback
-                  </span>
+                  <button
+                    type="button"
+                    onClick={handleOpenAudit}
+                    className="inline-flex items-center gap-1 text-[10px] text-amber/90 bg-amber/10 border border-amber/30 px-2 py-0.5 rounded-md hover:bg-amber/20 cursor-pointer"
+                  >
+                    <CloudOff className="w-3 h-3" />
+                    <span>Local Fallback</span>
+                    <span className="text-[9px] text-amber underline">Audit</span>
+                  </button>
                 )}
               </div>
               <p className="text-[11px] text-zinc-400">
@@ -274,19 +301,31 @@ export function AdminDashboard() {
         </div>
       </header>
 
-      {/* ─── FIREBASE SETUP BANNER (FALLBACK SAFETY) ─── */}
-      {!isFirebaseConfigured && showFirebaseBanner && (
+      {/* ─── SUPABASE STATUS BANNER ─── */}
+      {showFirebaseBanner && (
         <div className="max-w-6xl mx-auto px-4 pt-4">
-          <div className="p-4 rounded-2xl bg-amber/10 border border-amber/30 flex items-start justify-between gap-3 text-xs text-zinc-200">
+          <div className={`p-4 rounded-2xl flex items-start justify-between gap-3 text-xs ${
+            isSupabaseConfigured
+              ? "bg-emerald-950/25 border border-emerald-500/40 text-emerald-200"
+              : "bg-amber/10 border border-amber/30 text-zinc-200"
+          }`}>
             <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-amber shrink-0 mt-0.5" />
+              <Sparkles className={`w-5 h-5 shrink-0 mt-0.5 ${isSupabaseConfigured ? "text-emerald-400" : "text-amber"}`} />
               <div className="space-y-1">
-                <p className="font-semibold text-white">
-                  Running in Local Demo Mode • Ready for Worldwide Real-Time Sync
+                <p className="font-semibold text-white flex items-center gap-2">
+                  <span>{isSupabaseConfigured ? "🟢 Supabase Cloud Connected" : "Running in Local Demo Mode"}</span>
+                  <button
+                    type="button"
+                    onClick={handleOpenAudit}
+                    className="text-[11px] underline text-amber hover:text-white"
+                  >
+                    Run Connection Diagnostic Audit
+                  </button>
                 </p>
                 <p className="text-zinc-400 leading-relaxed">
-                  To sync dish availability across different smartphones globally on Vercel, paste your Firebase config in{" "}
-                  <code className="text-amber bg-black/40 px-1 py-0.5 rounded font-mono">.env</code> or Vercel Environment Variables (see <code className="text-amber">.env.example</code>). Currently running with local cross-tab fallback.
+                  {isSupabaseConfigured
+                    ? "Supabase PostgreSQL + Realtime WebSockets active. Dish availability, Waiter Claim, and Table OTPs are syncing globally."
+                    : "To enable global real-time synchronization on Vercel, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel Project Settings."}
                 </p>
               </div>
             </div>
@@ -893,6 +932,137 @@ export function AdminDashboard() {
                   Delete
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── MODAL: API & REALTIME CONNECTION HEALTH AUDIT ─── */}
+      <AnimatePresence>
+        {isHealthModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#181615] border border-amber/40 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl text-[#FAF7F2]"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber/20 border border-amber/40 flex items-center justify-center text-amber">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-lg font-bold text-white">
+                      API & Real-Time Connection Audit
+                    </h3>
+                    <p className="text-[11px] text-zinc-400">
+                      Live diagnostic check against Supabase PostgreSQL
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsHealthModalOpen(false)}
+                  className="text-zinc-400 hover:text-white text-xs px-2 py-1 rounded-lg bg-zinc-800"
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              {isAuditing ? (
+                <div className="py-8 text-center space-y-3">
+                  <div className="w-8 h-8 border-2 border-amber border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="text-xs text-zinc-300">
+                    Pinging Supabase REST endpoints & checking Realtime WebSockets...
+                  </p>
+                </div>
+              ) : healthResult ? (
+                <div className="space-y-4 text-xs">
+                  {/* Status Banner */}
+                  <div
+                    className={`p-3.5 rounded-2xl border flex items-center gap-3 ${
+                      healthResult.databaseConnected
+                        ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-200"
+                        : "bg-red-950/40 border-red-500/50 text-red-200"
+                    }`}
+                  >
+                    <div className="text-2xl">
+                      {healthResult.databaseConnected ? "🟢" : "🔴"}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm">
+                        {healthResult.databaseConnected
+                          ? "Database Connected & Realtime Operational"
+                          : "Database Connection Failed"}
+                      </div>
+                      <div className="text-[11px] opacity-80">
+                        {healthResult.databaseConnected
+                          ? `Roundtrip query latency: ${healthResult.latencyMs}ms`
+                          : healthResult.errorDetails}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Diagnostic Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                      <span className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                        Supabase Project URL
+                      </span>
+                      <p className="font-mono text-xs text-amber truncate">
+                        {healthResult.supabaseUrl}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                      <span className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                        Realtime WebSockets
+                      </span>
+                      <p className="font-bold text-xs text-emerald-400 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        Active Channel
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                      <span className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                        Registered Tables in Cloud
+                      </span>
+                      <p className="font-mono font-bold text-base text-white">
+                        {healthResult.tablesCount} Tables
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                      <span className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                        Active In-Flight Orders
+                      </span>
+                      <p className="font-mono font-bold text-base text-white">
+                        {healthResult.activeOrdersCount} Orders
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={handleOpenAudit}
+                      className="px-4 py-2 rounded-xl bg-amber hover:bg-amber-400 text-obsidian font-bold text-xs flex items-center gap-1.5 transition-all"
+                    >
+                      <span>Re-Run Audit</span>
+                    </button>
+                    <a
+                      href="/api/health"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-zinc-400 hover:text-white underline font-mono"
+                    >
+                      View Raw JSON (/api/health)
+                    </a>
+                  </div>
+                </div>
+              ) : null}
             </motion.div>
           </div>
         )}

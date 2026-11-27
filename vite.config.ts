@@ -5,6 +5,7 @@ import { fileURLToPath, URL } from "node:url";
 // https://vitejs.dev/config/
 export default defineConfig({
   base: "/",
+  envPrefix: ["VITE_", "NEXT_PUBLIC_"],
   plugins: [react()],
   resolve: {
     alias: {
