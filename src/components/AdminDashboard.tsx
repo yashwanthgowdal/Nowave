@@ -25,6 +25,10 @@ import {
   Cloud,
   CloudOff,
   HelpCircle,
+  LayoutDashboard,
+  ChefHat,
+  MapPin,
+  Bell,
 } from "lucide-react";
 import { useRealtimeMenu } from "@/lib/useRealtimeMenu";
 import { MenuService } from "@/lib/MenuService";
@@ -33,14 +37,19 @@ import { formatPrice } from "@/lib/utils";
 import { QRGenerator } from "@/components/QRGenerator";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { ExecutiveDashboardView } from "@/components/ExecutiveDashboardView";
+import { KitchenDisplaySystem } from "@/components/KitchenDisplaySystem";
+import { StaffFloorMap } from "@/components/StaffFloorMap";
+import { useRestaurantStore } from "@/lib/useRestaurantStore";
 
-type AdminTab = "availability" | "crud" | "qr";
+type AdminTab = "overview" | "kds" | "floor" | "availability" | "crud" | "qr";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { items, categories, loading, error, refresh, setItems } = useRealtimeMenu();
+  const { activeServiceRequests, orders } = useRestaurantStore();
 
-  const [activeTab, setActiveTab] = useState<AdminTab>("availability");
+  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showOnlyOutOfStock, setShowOnlyOutOfStock] = useState(false);
@@ -346,44 +355,93 @@ export function AdminDashboard() {
 
         {/* ─── Navigation Tabs & Quick Action Bar ─── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-obsidian-border pb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab("overview")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
+                activeTab === "overview"
+                  ? "bg-amber text-black shadow-lg shadow-amber/20"
+                  : "bg-zinc-900 text-zinc-400 hover:text-white border border-obsidian-border"
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Executive Overview</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("kds")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
+                activeTab === "kds"
+                  ? "bg-amber text-black shadow-lg shadow-amber/20"
+                  : "bg-zinc-900 text-zinc-400 hover:text-white border border-obsidian-border"
+              }`}
+            >
+              <ChefHat className="w-4 h-4" />
+              <span>Kitchen KDS</span>
+              {orders.filter((o) => o.status === "cooking" || o.status === "placed").length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-amber text-black text-[10px] font-bold flex items-center justify-center">
+                  {orders.filter((o) => o.status === "cooking" || o.status === "placed").length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("floor")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
+                activeTab === "floor"
+                  ? "bg-amber text-black shadow-lg shadow-amber/20"
+                  : "bg-zinc-900 text-zinc-400 hover:text-white border border-obsidian-border"
+              }`}
+            >
+              <MapPin className="w-4 h-4" />
+              <span>Floor Map</span>
+              {activeServiceRequests.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse">
+                  {activeServiceRequests.length} Help
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setActiveTab("availability")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
                 activeTab === "availability"
                   ? "bg-amber text-black shadow-lg shadow-amber/20"
                   : "bg-zinc-900 text-zinc-400 hover:text-white border border-obsidian-border"
               }`}
             >
               <Radio className="w-4 h-4" />
-              <span>Live Availability Toggles</span>
+              <span>Stock Toggles</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab("crud")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
                 activeTab === "crud"
                   ? "bg-amber text-black shadow-lg shadow-amber/20"
                   : "bg-zinc-900 text-zinc-400 hover:text-white border border-obsidian-border"
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              <span>Full Menu CRUD</span>
+              <span>Menu CRUD</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab("qr")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
                 activeTab === "qr"
                   ? "bg-amber text-black shadow-lg shadow-amber/20"
                   : "bg-zinc-900 text-zinc-400 hover:text-white border border-obsidian-border"
               }`}
             >
               <QrCode className="w-4 h-4" />
-              <span>Table QR Generator</span>
+              <span>QR Codes</span>
             </button>
           </div>
 
@@ -396,7 +454,7 @@ export function AdminDashboard() {
               title="Reset all dishes to Available for start of day"
             >
               <RotateCcw className="w-3.5 h-3.5 text-amber" />
-              <span>Reset All to Available</span>
+              <span className="hidden md:inline">Reset Stock</span>
             </button>
 
             <button
@@ -409,6 +467,17 @@ export function AdminDashboard() {
             </button>
           </div>
         </div>
+
+        {/* ─── TAB 0: EXECUTIVE OVERVIEW (VIDEO BLUEPRINT) ─── */}
+        {activeTab === "overview" && (
+          <ExecutiveDashboardView onNavigateTab={setActiveTab} />
+        )}
+
+        {/* ─── TAB: KITCHEN DISPLAY SYSTEM (KDS) ─── */}
+        {activeTab === "kds" && <KitchenDisplaySystem />}
+
+        {/* ─── TAB: LIVE FLOOR MAP & WAITER CALLS ─── */}
+        {activeTab === "floor" && <StaffFloorMap />}
 
         {/* ─── TAB 1: LIVE AVAILABILITY TOGGLES (CORE FEATURE) ─── */}
         {activeTab === "availability" && (

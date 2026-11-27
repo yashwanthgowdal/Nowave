@@ -10,6 +10,7 @@ interface DishCardProps {
   item: MenuItem;
   onImageClick?: (url: string, name: string) => void;
   onAddNote: (item: MenuItem) => void;
+  onCustomize?: (item: MenuItem) => void;
   isNoted?: boolean;
 }
 
@@ -155,28 +156,28 @@ export function DishCard({
 
       {/* Action Footer */}
       <div className="p-4 pt-1 border-t border-obsidian-border/50 flex items-center justify-between">
-        <div className="text-xs text-zinc-500">
-          Table service only
+        <div className="text-[11px] text-zinc-500 font-medium">
+          Table service
         </div>
 
         <button
           type="button"
-          onClick={() => onAddNote(item)}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 ${
+          onClick={() => (onCustomize ? onCustomize(item) : onAddNote(item))}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md ${
             isNoted
               ? "bg-emerald-500/15 border border-emerald-500/40 text-emerald-400"
-              : "bg-zinc-800 hover:bg-amber hover:text-black text-zinc-200 border border-zinc-700"
+              : "bg-gradient-to-r from-amber to-amber-600 hover:brightness-110 text-obsidian shadow-amber/20"
           }`}
         >
           {isNoted ? (
             <>
               <Check className="w-3.5 h-3.5" />
-              Noted
+              In Cart
             </>
           ) : (
             <>
-              <Plus className="w-3.5 h-3.5" />
-              + Note
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              Add
             </>
           )}
         </button>
